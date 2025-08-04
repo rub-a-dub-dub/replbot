@@ -18,6 +18,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -70,6 +71,7 @@ type Bot struct {
 	webPrefix map[string]*session
 	cancelFn  context.CancelFunc
 	mu        sync.RWMutex
+	rl        *rateLimiter
 }
 
 // New creates a new REPLbot instance using the given configuration
@@ -96,6 +98,7 @@ func New(conf *config.Config) (*Bot, error) {
 		sessions:  make(map[string]*session),
 		shareUser: make(map[string]*session),
 		webPrefix: make(map[string]*session),
+		rl:        newRateLimiter(conf),
 	}, nil
 }
 
@@ -161,6 +164,10 @@ func (b *Bot) handleEvents(ctx context.Context, eventChan <-chan event) error {
 func (b *Bot) handleEvent(e event) error {
 	switch ev := e.(type) {
 	case *messageEvent:
+		if allowed, retry := b.rl.allow(ev.User, opMessage); !allowed {
+			b.sendRateLimit(&channelID{Channel: ev.Channel, Thread: ev.Thread}, ev.User, retry)
+			return nil
+		}
 		return b.handleMessageEvent(ev)
 	case *errorEvent:
 		return ev.Error
@@ -184,6 +191,10 @@ func (b *Bot) handleMessageEvent(ev *messageEvent) error {
 	if allowed, err := b.checkSessionAllowed(ev.Channel, ev.Thread, conf); err != nil || !allowed {
 		return err
 	}
+	if allowed, retry := b.rl.allow(ev.User, opSession); !allowed {
+		b.sendRateLimit(&channelID{Channel: ev.Channel, Thread: ev.Thread}, ev.User, retry)
+		return nil
+	}
 	switch conf.controlMode {
 	case config.Channel:
 		return b.startSessionChannel(ev, conf)
@@ -201,10 +212,22 @@ func (b *Bot) maybeForwardMessage(ev *messageEvent) bool {
 	defer b.mu.Unlock()
 	sessionID := util.SanitizeNonAlphanumeric(fmt.Sprintf("%s_%s", ev.Channel, ev.Thread)) // Thread may be empty, that's ok
 	if sess, ok := b.sessions[sessionID]; ok && sess.Active() {
-		sess.UserInput(ev.User, ev.Message)
+		if allowed, retry := b.rl.allow(ev.User, opCommand); allowed {
+			sess.UserInput(ev.User, ev.Message)
+		} else {
+			b.sendRateLimit(&channelID{Channel: ev.Channel, Thread: ev.Thread}, ev.User, retry)
+		}
 		return true
 	}
 	return false
+}
+
+func (b *Bot) sendRateLimit(ch *channelID, user string, d time.Duration) {
+	secs := int(d.Seconds()) + 1
+	msg := fmt.Sprintf("⏱️ Slow down! Try again in %d seconds.", secs)
+	if err := b.conn.SendEphemeral(ch, user, msg); err != nil {
+		slog.Error("unable to send rate limit message", "error", err)
+	}
 }
 
 func (b *Bot) parseSessionConfig(ev *messageEvent) (*sessionConfig, error) {
