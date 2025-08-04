@@ -141,10 +141,13 @@ var (
 // session represents a REPL session
 //
 // Slack:
-//   Channels and DMs have an ID (fields: Channel, Timestamp), and may have a ThreadTimestamp field
-//   to identify if they belong to a thread.
+//
+//	Channels and DMs have an ID (fields: Channel, Timestamp), and may have a ThreadTimestamp field
+//	to identify if they belong to a thread.
+//
 // Discord:
-//   Channels, DMs and Threads are all channels with an ID
+//
+//	Channels, DMs and Threads are all channels with an ID
 type session struct {
 	conf           *sessionConfig
 	conn           conn
@@ -929,7 +932,11 @@ func (s *session) startWeb(writable bool) error {
 		s.webPort = webPort
 	}
 	if s.webPrefix == "" {
-		s.webPrefix = util.RandomString(10)
+		p, err := util.RandomString(10)
+		if err != nil {
+			return err
+		}
+		s.webPrefix = p
 	}
 	s.webWritable = writable
 	var args []string

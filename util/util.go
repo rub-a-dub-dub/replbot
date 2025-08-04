@@ -2,9 +2,9 @@
 package util
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net"
 	"os"
 	"os/exec"
@@ -17,7 +17,6 @@ import (
 
 var (
 	nonAlphanumericCharsRegex = regexp.MustCompile(`[^A-Za-z0-9]`)
-	random                    = rand.New(rand.NewSource(time.Now().UnixNano()))
 	randomStringCharset       = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
@@ -81,12 +80,15 @@ func RandomPort() (int, error) {
 }
 
 // RandomString returns a random alphanumeric string of the given length
-func RandomString(length int) string {
+func RandomString(length int) (string, error) {
 	b := make([]byte, length)
-	for i := range b {
-		b[i] = randomStringCharset[random.Intn(len(randomStringCharset))]
+	if _, err := rand.Read(b); err != nil {
+		return "", err
 	}
-	return string(b)
+	for i, v := range b {
+		b[i] = randomStringCharset[int(v)%len(randomStringCharset)]
+	}
+	return string(b), nil
 }
 
 // FormatMarkdownCode formats the given string as a markdown code block
@@ -130,13 +132,20 @@ func WaitUntilNot(fn func() bool, maxWait time.Duration) bool {
 }
 
 // TempFileName generates a random file name for a file in the temp folder
-func TempFileName() string {
-	return filepath.Join(os.TempDir(), "replbot_"+RandomString(10))
+func TempFileName() (string, error) {
+	r, err := RandomString(10)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(os.TempDir(), "replbot_"+r), nil
 }
 
 // GenerateSSHKeyPair generates an SSH key pair
 func GenerateSSHKeyPair() (pair *SSHKeyPair, err error) {
-	privKeyFile := TempFileName()
+	privKeyFile, err := TempFileName()
+	if err != nil {
+		return nil, err
+	}
 	pubKeyFile := privKeyFile + ".pub"
 	defer func() {
 		os.Remove(privKeyFile)
