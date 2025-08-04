@@ -6,7 +6,7 @@ import (
 	"heckel.io/replbot/config"
 	"heckel.io/replbot/util"
 	"io"
-	"log"
+	"log/slog"
 	"regexp"
 	"strconv"
 	"sync"
@@ -183,8 +183,8 @@ func (c *memConn) MessageContainsWait(id string, needle string) (contains bool) 
 func (c *memConn) LogMessages() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	log.Printf("Messages:")
+	slog.Debug("messages:")
 	for id, m := range c.messages {
-		log.Printf("\nBEGIN MESSAGE %s: id=%s, channel=%s, thread=%s\n---\n%s\n---\nEND MESSAGE %s", id, m.ID, m.Channel, m.Thread, m.Message, m.ID)
+		slog.Debug("message", "index", id, "id", m.ID, "channel", m.Channel, "thread", m.Thread, "body", m.Message)
 	}
 }

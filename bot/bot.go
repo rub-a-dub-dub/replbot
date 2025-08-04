@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"heckel.io/replbot/config"
 	"heckel.io/replbot/util"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -130,9 +130,9 @@ func (b *Bot) Stop() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	for sessionID, sess := range b.sessions {
-		log.Printf("[%s] Force-closing session", sessionID)
+		slog.Info("force-closing session", "session", sessionID)
 		if err := sess.ForceClose(); err != nil {
-			log.Printf("[%s] Force-closing failed: %s", sessionID, err.Error())
+			slog.Error("force-closing session failed", "session", sessionID, "error", err)
 		}
 		delete(b.sessions, sessionID)
 		if sess.conf.share != nil {
@@ -349,12 +349,12 @@ func (b *Bot) startSession(conf *sessionConfig) error {
 	if conf.share != nil {
 		b.shareUser[conf.share.user] = sess
 	}
-	log.Printf("[%s] Starting session, requested by %s", conf.id, conf.user)
+	slog.Info("starting session", "session", conf.id, "user", conf.user)
 	go func() {
 		if err := sess.Run(); err != nil {
-			log.Printf("[%s] Session exited with error: %s", conf.id, err.Error())
+			slog.Error("session exited with error", "session", conf.id, "error", err)
 		} else {
-			log.Printf("[%s] Session exited successfully", conf.id)
+			slog.Info("session exited successfully", "session", conf.id)
 		}
 		b.mu.Lock()
 		delete(b.sessions, conf.id)
@@ -424,7 +424,7 @@ func (b *Bot) runWebServer(ctx context.Context) error {
 
 func (b *Bot) webHandler(w http.ResponseWriter, r *http.Request) {
 	if err := b.webHandlerInternal(w, r); err != nil {
-		log.Printf("[web] error: %s, returning 404", err.Error())
+		slog.Error("web handler error; returning 404", "error", err)
 		http.NotFound(w, r)
 	}
 }
@@ -525,11 +525,11 @@ func (b *Bot) sshSessionHandler(s ssh.Session) {
 	}
 	clientUser := s.Command()[0]
 	if err := sess.WriteShareUserFile(clientUser); err != nil {
-		log.Printf("cannot write share user file: %s", err.Error())
+		slog.Error("cannot write share user file", "error", err)
 		return
 	}
 	if err := sess.WriteShareClientScript(s); err != nil {
-		log.Printf("cannot write session script: %s", err.Error())
+		slog.Error("cannot write session script", "error", err)
 		return
 	}
 }
@@ -543,7 +543,7 @@ func (b *Bot) sshReversePortForwardingCallback(ctx ssh.Context, host string, por
 	}
 	defer func() {
 		if !allow {
-			log.Printf("rejecting connection %s", conn.RemoteAddr())
+			slog.Info("rejecting connection", "remote", conn.RemoteAddr())
 			conn.Close()
 		}
 	}()

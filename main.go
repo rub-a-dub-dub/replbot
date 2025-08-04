@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/urfave/cli/v2"
 	"heckel.io/replbot/cmd"
+	"log/slog"
 	"os"
 	"runtime"
 )
@@ -16,6 +17,9 @@ var (
 )
 
 func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	cli.AppHelpTemplate += fmt.Sprintf(`
 Try 'replbot COMMAND --help' for more information.
 

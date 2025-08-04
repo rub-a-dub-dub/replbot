@@ -9,7 +9,7 @@ import (
 	"heckel.io/replbot/bot"
 	"heckel.io/replbot/config"
 	"heckel.io/replbot/util"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -77,6 +77,9 @@ func execRun(c *cli.Context) error {
 	shareHost := c.String("share-host")
 	shareKeyFile := c.String("share-key-file")
 	debug := c.Bool("debug")
+	if debug {
+		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	}
 	var defaultRecord bool
 	if c.IsSet("no-default-record") {
 		defaultRecord = false
@@ -163,7 +166,7 @@ func execRun(c *cli.Context) error {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigs // Doesn't matter which
-		log.Printf("Signal received. Closing all active sessions.")
+		slog.Info("signal received; closing all active sessions")
 		robot.Stop()
 	}()
 
@@ -172,7 +175,7 @@ func execRun(c *cli.Context) error {
 		return err
 	}
 
-	log.Printf("Exiting.")
+	slog.Info("exiting")
 	return nil
 }
 
@@ -189,7 +192,7 @@ func parseCursorRate(cursor string) (time.Duration, error) {
 		} else if cursorRate < 500*time.Millisecond {
 			return 0, fmt.Errorf("cursor rate is too low, min allowed is 500ms, though that'll probably cause rate limiting issues too")
 		} else if cursorRate < time.Second {
-			log.Printf("warning: cursor rate is really low; we'll get rate limited if there are too many shells open")
+			slog.Warn("cursor rate is really low; we'll get rate limited if there are too many shells open")
 		}
 		return cursorRate, nil
 	}

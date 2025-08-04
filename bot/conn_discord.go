@@ -7,7 +7,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"heckel.io/replbot/config"
 	"io"
-	"log"
+	"log/slog"
 	"regexp"
 	"sync"
 )
@@ -58,7 +58,7 @@ func (c *discordConn) Connect(ctx context.Context) (<-chan event, error) {
 	if discord.State == nil || discord.State.User == nil {
 		return nil, errors.New("unexpected internal state")
 	}
-	log.Printf("Discord connected as user %s/%s", discord.State.User.Username, discord.State.User.ID)
+	slog.Info("discord connected", "user", discord.State.User.Username, "id", discord.State.User.ID)
 	return eventChan, nil
 }
 
