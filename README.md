@@ -275,6 +275,21 @@ make build-simple
 To build releases, I use [GoReleaser](https://goreleaser.com/). If you have that installed, you can run `make build` or
 `make build-snapshot`.
 
+## Development
+
+This project uses Go's standard tooling along with
+[golangci-lint](https://github.com/golangci/golangci-lint) and
+[staticcheck](https://staticcheck.io/) for linting and static analysis.
+
+```bash
+make fmt          # go fmt
+make vet          # go vet
+make lint         # golangci-lint
+make staticcheck  # staticcheck
+```
+
+Run `make check` to execute tests and all linters.
+
 ## Contributing
 I welcome any and all contributions. Just create a PR or an issue, or talk to me [on Slack](https://gophers.slack.com/archives/C02ABHKDCN7).
 

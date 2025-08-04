@@ -19,7 +19,7 @@ help:
 	@echo "  make fmt                         - Run 'go fmt'"
 	@echo "  make fmt-check                   - Run 'go fmt', but don't change anything"
 	@echo "  make vet                         - Run 'go vet'"
-	@echo "  make lint                        - Run 'golint'"
+	@echo "  make lint                        - Run 'golangci-lint'"
 	@echo "  make staticcheck                 - Run 'staticcheck'"
 	@echo
 	@echo "Build:"
@@ -35,7 +35,6 @@ help:
 	@echo "Install locally (requires sudo):"
 	@echo "  make install                     - Copy binary from dist/ to /usr/bin"
 	@echo "  make install-deb                 - Install .deb from dist/"
-	@echo "  make install-lint                - Install golint"
 
 
 # Test/check targets
@@ -73,12 +72,12 @@ vet:
 	$(GO) vet ./...
 
 lint:
-	which golint || $(GO) get -u golang.org/x/lint/golint
-	$(GO) list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
+	which golangci-lint || $(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	golangci-lint run
 
 staticcheck: .PHONY
 	rm -rf build/staticcheck
-	which staticcheck || go get honnef.co/go/tools/cmd/staticcheck
+	which staticcheck || $(GO) install honnef.co/go/tools/cmd/staticcheck@latest
 	mkdir -p build/staticcheck
 	ln -s "$(GO)" build/staticcheck/go
 	PATH="$(PWD)/build/staticcheck:$(PATH)" staticcheck ./...
