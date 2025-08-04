@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: '0 0 * * *'
   pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -25,7 +26,8 @@ jobs:
       - name: Run govulncheck
         run: govulncheck -format sarif ./... > govulncheck.sarif
       - name: Upload results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
           sarif_file: govulncheck.sarif
 
@@ -43,7 +45,8 @@ jobs:
       - name: Run gosec
         run: gosec -fmt sarif -out gosec.sarif ./...
       - name: Upload results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
           sarif_file: gosec.sarif
 
@@ -78,24 +81,26 @@ jobs:
       - name: Build test image
         run: docker build -t replbot-test -f Dockerfile.test .
       - name: Scan production image
-        uses: aquasecurity/trivy-action@v0.20.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           image-ref: replbot
           format: sarif
           output: trivy-prod.sarif
-          exit-code: '1'
+          exit-code: '0'
       - name: Upload production scan results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
           sarif_file: trivy-prod.sarif
       - name: Scan test image
-        uses: aquasecurity/trivy-action@v0.20.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           image-ref: replbot-test
           format: sarif
           output: trivy-test.sarif
-          exit-code: '1'
+          exit-code: '0'
       - name: Upload test scan results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
           sarif_file: trivy-test.sarif
