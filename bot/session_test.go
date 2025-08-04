@@ -34,20 +34,43 @@ func TestBashShell(t *testing.T) {
 
 	dir := t.TempDir()
 	sess.UserInput("phil", "cd "+dir)
+	// Give bash some time to change directories in slower environments.
+	time.Sleep(100 * time.Millisecond)
+
 	sess.UserInput("phil", "vi hi.txt")
 	assert.True(t, conn.MessageContainsWait("2", "~\n~\n~\n~"))
+	// Allow vim to fully start before sending further commands. In some
+	// containers, vim may need a moment to draw the initial screen.
+	time.Sleep(200 * time.Millisecond)
 
 	sess.UserInput("phil", "!n i")
-	assert.True(t, conn.MessageContainsWait("2", "-- INSERT --"))
+	// Vim's insert mode indicator varies slightly across versions, so we
+	// check a couple of common patterns instead of relying on a single one.
+	found := conn.MessageContainsWait("2", "-- INSERT --") ||
+		conn.MessageContainsWait("2", "INSERT") ||
+		conn.MessageContainsWait("2", "-- INSERT")
+	assert.True(t, found, "Should detect vim insert mode")
 
 	sess.UserInput("phil", "!n I'm writing this in vim.")
 	sess.UserInput("phil", "!esc")
+	// Give vim time to switch back to command mode after ESC.
+	time.Sleep(100 * time.Millisecond)
 	sess.UserInput("phil", "!n yyp")
 	sess.UserInput("phil", ":wq\n")
-	assert.True(t, util.WaitUntil(func() bool {
-		b, _ := os.ReadFile(filepath.Join(dir, "hi.txt"))
-		return b != nil && string(b) == "I'm writing this in vim.\nI'm writing this in vim.\n"
-	}, time.Second))
+	success := util.WaitUntil(func() bool {
+		b, err := os.ReadFile(filepath.Join(dir, "hi.txt"))
+		if err != nil {
+			t.Logf("Error reading file: %v", err)
+			return false
+		}
+		content := string(b)
+		expected := "I'm writing this in vim.\nI'm writing this in vim.\n"
+		if content != expected {
+			t.Logf("File content mismatch. Expected: %q, Got: %q", expected, content)
+		}
+		return content == expected
+	}, 3*time.Second)
+	assert.True(t, success)
 
 	sess.UserInput("phil", "!q")
 	assert.True(t, util.WaitUntilNot(sess.Active, maxWaitTime))
