@@ -1,23 +1,21 @@
 module heckel.io/replbot
 
-go 1.22
+go 1.23
+
 
 require (
-	github.com/BurntSushi/toml v0.4.1 // indirect
-	github.com/bwmarrin/discordgo v0.23.3-0.20210811014036-f7454d039f3a
-	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
-        github.com/gliderlabs/ssh v0.3.3
-        github.com/slack-go/slack v0.17.3
-        github.com/tidwall/sjson v1.2.2
-        github.com/stretchr/testify v1.10.0
-        github.com/urfave/cli/v2 v2.3.0
-	golang.org/x/crypto v0.0.0-20210812204632-0ba0e8f03122
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
+	github.com/BurntSushi/toml v1.5.0 // indirect
+	github.com/bwmarrin/discordgo v0.29.0
+	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
+	github.com/gliderlabs/ssh v0.3.8
+	github.com/slack-go/slack v0.17.3
+	github.com/stretchr/testify v1.10.0
+	github.com/tidwall/sjson v1.2.5
+	github.com/urfave/cli/v2 v2.27.7
+	golang.org/x/crypto v0.40.0
+	golang.org/x/sync v0.16.0
+	golang.org/x/sys v0.34.0 // indirect
 )
-
-require github.com/tidwall/sjson v1.2.2
 
 require (
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
@@ -25,10 +23,9 @@ require (
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/tidwall/gjson v1.9.1 // indirect
-	github.com/tidwall/match v1.0.3 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
+	github.com/tidwall/gjson v1.18.0 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/bwmarrin/discordgo => github.com/binwiederhier/discordgo v0.23.3-0.20210824013058-32da67e86a5d

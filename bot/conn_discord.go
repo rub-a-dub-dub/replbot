@@ -124,7 +124,14 @@ func (c *discordConn) Archive(channel *channelID) error {
 	if channel.Thread == "" {
 		return nil
 	}
-	_, err := c.session.ThreadEdit(channel.Thread, "REPLbot session", true, false, discordgo.ArchiveDurationOneHour)
+	archived := true
+	locked := false
+	_, err := c.session.ChannelEdit(channel.Thread, &discordgo.ChannelEdit{
+		Name:                "REPLbot session",
+		Archived:            &archived,
+		Locked:              &locked,
+		AutoArchiveDuration: 60,
+	})
 	return err
 }
 
@@ -215,7 +222,7 @@ func (c *discordConn) maybeCreateThread(target *channelID) (string, error) {
 	if _, ok := c.channels[target.Thread]; ok {
 		return target.Thread, nil
 	}
-	ch, err := c.session.ThreadStartWithMessage(target.Channel, target.Thread, "REPLbot session", discordgo.ArchiveDurationOneHour)
+	ch, err := c.session.MessageThreadStart(target.Channel, target.Thread, "REPLbot session", 60)
 	if err != nil {
 		return "", err
 	}

@@ -5,10 +5,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Build test image
         run: docker build -t replbot-test -f Dockerfile.test .
       - name: Run tests, formatting, vetting and linting
         run: docker run --rm replbot-test make check
       - name: Run and upload coverage to codecov.io
         run: docker run --rm replbot-test make coverage coverage-upload
+  security:
+    needs: test
+    uses: ./.github/workflows/security.yaml
