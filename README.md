@@ -180,6 +180,7 @@ API. To create a classic app and acquire a Slack bot token, follow these steps:
 2. In the "App Home" section, add a "Legacy bot user"
 3. In the "OAuth & Permissions" section, click "Install to Workspace" (_this may require workspace admin approval_)
 4. Copy the "Bot User OAuth Token" starting with "xoxb-..."
+5. Create an "App-Level Token" with the "connections:write" scope for Socket Mode and copy the token starting with "xapp-..."
 
 **Creating a REPLbot Discord app**:   
 1. Create a [Discord app](https://discord.com/developers/applications) 

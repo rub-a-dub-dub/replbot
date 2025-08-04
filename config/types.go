@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -82,3 +83,31 @@ const (
 	CursorOff = time.Duration(0)
 	CursorOn  = time.Duration(1)
 )
+
+// ConfigError represents configuration errors.
+type ConfigError struct {
+	Code    string
+	Message string
+	Cause   error
+}
+
+// Error implements the error interface.
+func (e *ConfigError) Error() string {
+	if e == nil {
+		return "<nil>"
+	}
+	if e.Cause != nil {
+		return fmt.Sprintf("%s: %v", e.Message, e.Cause)
+	}
+	return e.Message
+}
+
+// Unwrap returns the underlying cause.
+func (e *ConfigError) Unwrap() error {
+	return e.Cause
+}
+
+// NewConfigError creates a new ConfigError.
+func NewConfigError(code, message string, cause error) *ConfigError {
+	return &ConfigError{Code: code, Message: message, Cause: cause}
+}

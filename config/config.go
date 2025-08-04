@@ -44,6 +44,7 @@ type RateLimit struct {
 // Config is the main config struct for the application. Use New to instantiate a default config struct.
 type Config struct {
 	Token                    string
+	AppToken                 string
 	ScriptDir                string
 	IdleTimeout              time.Duration
 	MaxTotalSessions         int
@@ -68,9 +69,10 @@ type Config struct {
 }
 
 // New instantiates a default new config
-func New(token string) *Config {
+func New(token, appToken string) *Config {
 	return &Config{
 		Token:                    token,
+		AppToken:                 appToken,
 		IdleTimeout:              DefaultIdleTimeout,
 		MaxTotalSessions:         DefaultMaxTotalSessions,
 		MaxUserSessions:          DefaultMaxUserSessions,
@@ -87,13 +89,20 @@ func New(token string) *Config {
 }
 
 // Platform returns the target connection type, based on the token
-func (c *Config) Platform() Platform {
+func (c *Config) Platform() (Platform, error) {
 	if strings.HasPrefix(c.Token, "mem") {
-		return Mem
-	} else if strings.HasPrefix(c.Token, "xoxb-") {
-		return Slack
+		return Mem, nil
 	}
-	return Discord
+	if strings.HasPrefix(c.Token, "xoxb-") || strings.HasPrefix(c.AppToken, "xapp-") {
+		if !strings.HasPrefix(c.AppToken, "xapp-") {
+			return "", NewConfigError("INVALID_SLACK_APP_TOKEN", "slack app token must start with 'xapp-'", nil)
+		}
+		if !strings.HasPrefix(c.Token, "xoxb-") {
+			return "", NewConfigError("INVALID_SLACK_BOT_TOKEN", "slack bot token must start with 'xoxb-'", nil)
+		}
+		return Slack, nil
+	}
+	return Discord, nil
 }
 
 // ShareEnabled returns true if the share features is enabled

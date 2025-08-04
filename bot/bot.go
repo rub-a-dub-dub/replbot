@@ -81,11 +81,11 @@ func New(conf *config.Config) (*Bot, error) {
 	} else if err := util.Run("tmux", "-V"); err != nil {
 		return nil, fmt.Errorf("tmux check failed: %w", err)
 	}
-	var conn conn
 	platform, err := conf.Platform()
 	if err != nil {
 		return nil, err
 	}
+	var conn conn
 	switch platform {
 	case config.Slack:
 		conn = newSlackConn(conf)
@@ -94,7 +94,7 @@ func New(conf *config.Config) (*Bot, error) {
 	case config.Mem:
 		conn = newMemConn(conf)
 	default:
-		return nil, NewConfigError("INVALID_PLATFORM", fmt.Sprintf("invalid type: %s", conf.Platform()), nil)
+		return nil, NewConfigError("INVALID_PLATFORM", fmt.Sprintf("invalid type: %s", platform), nil)
 	}
 	return &Bot{
 		config:    conf,
