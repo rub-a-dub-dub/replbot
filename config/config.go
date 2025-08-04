@@ -29,45 +29,60 @@ const (
 
 	// defaultRefreshInterval defines the interval at which the terminal refreshed
 	defaultRefreshInterval = 200 * time.Millisecond
+
+	// DefaultRateLimitCleanupInterval defines how often inactive rate limiters are cleaned up
+	DefaultRateLimitCleanupInterval = 10 * time.Minute
 )
+
+// RateLimit defines a simple rate limit configuration
+type RateLimit struct {
+	Requests int
+	Burst    int
+	Interval time.Duration
+}
 
 // Config is the main config struct for the application. Use New to instantiate a default config struct.
 type Config struct {
-	Token              string
-	ScriptDir          string
-	IdleTimeout        time.Duration
-	MaxTotalSessions   int
-	MaxUserSessions    int
-	DefaultControlMode ControlMode
-	DefaultWindowMode  WindowMode
-	DefaultAuthMode    AuthMode
-	DefaultSize        *Size
-	DefaultWeb         bool
-	WebHost            string
-	ShareHost          string
-	ShareKeyFile       string
-	DefaultRecord      bool
-	UploadRecording    bool
-	Cursor             time.Duration
-	RefreshInterval    time.Duration
-	Debug              bool
+	Token                    string
+	ScriptDir                string
+	IdleTimeout              time.Duration
+	MaxTotalSessions         int
+	MaxUserSessions          int
+	DefaultControlMode       ControlMode
+	DefaultWindowMode        WindowMode
+	DefaultAuthMode          AuthMode
+	DefaultSize              *Size
+	DefaultWeb               bool
+	WebHost                  string
+	ShareHost                string
+	ShareKeyFile             string
+	DefaultRecord            bool
+	UploadRecording          bool
+	Cursor                   time.Duration
+	RefreshInterval          time.Duration
+	Debug                    bool
+	MessageRateLimit         RateLimit
+	SessionRateLimit         RateLimit
+	CommandRateLimit         RateLimit
+	RateLimitCleanupInterval time.Duration
 }
 
 // New instantiates a default new config
 func New(token string) *Config {
 	return &Config{
-		Token:              token,
-		IdleTimeout:        DefaultIdleTimeout,
-		MaxTotalSessions:   DefaultMaxTotalSessions,
-		MaxUserSessions:    DefaultMaxUserSessions,
-		DefaultControlMode: DefaultControlMode,
-		DefaultWindowMode:  DefaultWindowMode,
-		DefaultAuthMode:    DefaultAuthMode,
-		DefaultSize:        DefaultSize,
-		DefaultRecord:      DefaultRecord,
-		DefaultWeb:         DefaultWeb,
-		UploadRecording:    DefaultUploadRecording,
-		RefreshInterval:    defaultRefreshInterval,
+		Token:                    token,
+		IdleTimeout:              DefaultIdleTimeout,
+		MaxTotalSessions:         DefaultMaxTotalSessions,
+		MaxUserSessions:          DefaultMaxUserSessions,
+		DefaultControlMode:       DefaultControlMode,
+		DefaultWindowMode:        DefaultWindowMode,
+		DefaultAuthMode:          DefaultAuthMode,
+		DefaultSize:              DefaultSize,
+		DefaultRecord:            DefaultRecord,
+		DefaultWeb:               DefaultWeb,
+		UploadRecording:          DefaultUploadRecording,
+		RefreshInterval:          defaultRefreshInterval,
+		RateLimitCleanupInterval: DefaultRateLimitCleanupInterval,
 	}
 }
 
