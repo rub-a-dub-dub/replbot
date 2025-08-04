@@ -61,20 +61,38 @@ func (c *slackConn) Connect(ctx context.Context) (<-chan event, error) {
 	c.cancel = cancel
 
 	go func() {
+		defer close(eventChan)
 		for {
 			select {
 			case <-ctx.Done():
+				slog.Debug("socket mode event handler stopping due to context cancellation")
 				return
-			case evt := <-socketClient.Events:
+			case evt, ok := <-socketClient.Events:
+				if !ok {
+					slog.Warn("socket mode events channel closed")
+					return
+				}
 				if ev := c.translateSocketModeEvent(evt); ev != nil {
-					eventChan <- ev
+					select {
+					case eventChan <- ev:
+					case <-ctx.Done():
+						slog.Debug("context cancelled while sending event")
+						return
+					}
 				}
 			}
 		}
 	}()
 
 	go func() {
-		_ = socketClient.RunContext(ctx)
+		if err := socketClient.RunContext(ctx); err != nil && ctx.Err() == nil {
+			slog.Error("socket mode client error", "error", err)
+			// Send error event to trigger reconnection logic
+			select {
+			case eventChan <- &errorEvent{fmt.Errorf("socket mode client error: %w", err)}:
+			case <-ctx.Done():
+			}
+		}
 	}()
 
 	return eventChan, nil
@@ -200,10 +218,15 @@ func (c *slackConn) translateSocketModeEvent(evt socketmode.Event) event {
 	case socketmode.EventTypeEventsAPI:
 		eventsAPIEvent, ok := evt.Data.(slackevents.EventsAPIEvent)
 		if !ok {
+			slog.Error("failed to cast event data to EventsAPIEvent")
 			return nil
 		}
-		// Acknowledge immediately
-		c.socketClient.Ack(*evt.Request)
+		// Acknowledge immediately with error handling
+		if evt.Request != nil {
+			c.socketClient.Ack(*evt.Request)
+		} else {
+			slog.Warn("received EventsAPI event without request to acknowledge")
+		}
 
 		switch ev := eventsAPIEvent.InnerEvent.Data.(type) {
 		case *slackevents.MessageEvent:
@@ -224,12 +247,22 @@ func (c *slackConn) translateSocketModeEvent(evt socketmode.Event) event {
 		slog.Error("Socket Mode connection error", "error", evt.Data)
 		return &errorEvent{fmt.Errorf("connection error: %v", evt.Data)}
 	case socketmode.EventTypeConnected:
-		// Get bot info to set userID
-		authTest, err := c.client.AuthTest()
+		// Get bot info to set userID with timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		
+		authTest, err := c.client.AuthTestContext(ctx)
 		if err != nil {
 			slog.Error("failed to get bot info", "error", err)
+			return &errorEvent{fmt.Errorf("authentication failed: %w", err)}
+		}
+		
+		if authTest.UserID == "" {
+			err := fmt.Errorf("authentication succeeded but no user ID returned")
+			slog.Error("invalid auth response", "error", err)
 			return &errorEvent{err}
 		}
+		
 		c.mu.Lock()
 		c.userID = authTest.UserID
 		c.mu.Unlock()
