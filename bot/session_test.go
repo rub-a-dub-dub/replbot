@@ -50,7 +50,7 @@ func TestBashShell(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 	}
 	assert.True(t, messageFound, "Should find 'test message' in terminal output")
-	
+
 	// Create a file using simple echo commands instead of vim
 	sess.UserInput("phil", "echo \"I'm writing this in vim.\" > hi.txt")
 	time.Sleep(200 * time.Millisecond)
@@ -60,7 +60,7 @@ func TestBashShell(t *testing.T) {
 	// Verify the file was created
 	sess.UserInput("phil", "cat hi.txt")
 	time.Sleep(300 * time.Millisecond)
-	
+
 	// Check that cat output appears in terminal
 	catFound := false
 	for i := 2; i <= 8; i++ { // Check a range of messages
@@ -169,6 +169,10 @@ func createSession(t *testing.T, script string) (*session, *memConn) {
 		size:        config.Small,
 	}
 	sess := newSession(sconfig, conn)
-	go sess.Run()
+	go func() {
+		if err := sess.Run(); err != nil {
+			t.Logf("Session run error: %v", err)
+		}
+	}()
 	return sess, conn
 }

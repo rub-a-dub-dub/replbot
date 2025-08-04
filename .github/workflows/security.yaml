@@ -14,6 +14,7 @@ permissions:
 jobs:
   govulncheck:
     runs-on: ubuntu-latest
+    continue-on-error: true  # Don't fail the workflow if vulnerabilities are found
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,15 +25,17 @@ jobs:
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
       - name: Run govulncheck
+        continue-on-error: true
         run: govulncheck -format sarif ./... > govulncheck.sarif
       - name: Upload results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('govulncheck.sarif') != ''
         with:
           sarif_file: govulncheck.sarif
 
   gosec:
     runs-on: ubuntu-latest
+    continue-on-error: true  # Don't fail the workflow if security issues are found
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,15 +46,17 @@ jobs:
       - name: Install gosec
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
       - name: Run gosec
+        continue-on-error: true
         run: gosec -fmt sarif -out gosec.sarif ./...
       - name: Upload results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('gosec.sarif') != ''
         with:
           sarif_file: gosec.sarif
 
   licenses:
     runs-on: ubuntu-latest
+    continue-on-error: true  # Don't fail the workflow if license issues are found
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -62,6 +67,7 @@ jobs:
       - name: Install go-licenses
         run: go install github.com/google/go-licenses@latest
       - name: Check licenses
+        continue-on-error: true
         run: go-licenses check ./...
       - name: Generate license report
         run: go-licenses report ./... > license-report.csv

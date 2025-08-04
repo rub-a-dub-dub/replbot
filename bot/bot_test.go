@@ -50,7 +50,11 @@ func TestBotIgnoreNonMentionsAndShowHelpMessage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	go robot.Run()
+	go func() {
+		if err := robot.Run(); err != nil {
+			t.Logf("Robot run error: %v", err)
+		}
+	}()
 	defer robot.Stop()
 	conn := robot.conn.(*memConn)
 
@@ -81,7 +85,11 @@ func TestBotBashSplitMode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	go robot.Run()
+	go func() {
+		if err := robot.Run(); err != nil {
+			t.Logf("Robot run error: %v", err)
+		}
+	}()
 	defer robot.Stop()
 	conn := robot.conn.(*memConn)
 
@@ -114,7 +122,11 @@ func TestBotBashDMChannelOnlyMeAllowDeny(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	go robot.Run()
+	go func() {
+		if err := robot.Run(); err != nil {
+			t.Logf("Robot run error: %v", err)
+		}
+	}()
 	defer robot.Stop()
 	conn := robot.conn.(*memConn)
 
@@ -181,7 +193,11 @@ func TestBotBashWebTerminal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	go robot.Run()
+	go func() {
+		if err := robot.Run(); err != nil {
+			t.Logf("Robot run error: %v", err)
+		}
+	}()
 	defer robot.Stop()
 	conn := robot.conn.(*memConn)
 
@@ -230,7 +246,11 @@ func TestBotBashRecording(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	go robot.Run()
+	go func() {
+		if err := robot.Run(); err != nil {
+			t.Logf("Robot run error: %v", err)
+		}
+	}()
 	defer robot.Stop()
 	conn := robot.conn.(*memConn)
 
@@ -317,7 +337,9 @@ func unzip(src, dest string) error {
 		}
 	}()
 
-	os.MkdirAll(dest, 0755)
+	if err := os.MkdirAll(dest, 0755); err != nil {
+		panic(err)
+	}
 
 	// Closure to address file descriptors issue with all the deferred .Close() methods
 	extractAndWriteFile := func(f *zip.File) error {
@@ -339,9 +361,13 @@ func unzip(src, dest string) error {
 		}
 
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(path, 0755)
+			if err := os.MkdirAll(path, 0755); err != nil {
+				return err
+			}
 		} else {
-			os.MkdirAll(filepath.Dir(path), 0755)
+			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+				return err
+			}
 			f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 			if err != nil {
 				return err
