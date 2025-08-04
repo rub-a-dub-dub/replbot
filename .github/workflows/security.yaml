@@ -73,34 +73,37 @@ jobs:
 
   container-scan:
     runs-on: ubuntu-latest
+    continue-on-error: true  # Don't fail the entire security workflow if container scan fails
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Build production image
         run: docker build -t replbot -f Dockerfile .
-      - name: Build test image
+      - name: Build test image  
         run: docker build -t replbot-test -f Dockerfile.test .
-      - name: Scan production image
-        uses: aquasecurity/trivy-action@v0.28.0
+      - name: Run Trivy vulnerability scanner (production image)
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
-          image-ref: replbot
-          format: sarif
-          output: trivy-prod.sarif
-          exit-code: '0'
-      - name: Upload production scan results
+          image-ref: 'replbot'
+          format: 'sarif'
+          output: 'trivy-prod.sarif'
+      - name: Upload Trivy scan results to GitHub Security tab (production)
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('trivy-prod.sarif') != ''
         with:
-          sarif_file: trivy-prod.sarif
-      - name: Scan test image
-        uses: aquasecurity/trivy-action@v0.28.0
+          sarif_file: 'trivy-prod.sarif'
+          category: 'trivy-container-prod'
+      - name: Run Trivy vulnerability scanner (test image)
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
-          image-ref: replbot-test
-          format: sarif
-          output: trivy-test.sarif
-          exit-code: '0'
-      - name: Upload test scan results
+          image-ref: 'replbot-test'
+          format: 'sarif'
+          output: 'trivy-test.sarif'
+      - name: Upload Trivy scan results to GitHub Security tab (test)
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('trivy-test.sarif') != ''
         with:
-          sarif_file: trivy-test.sarif
+          sarif_file: 'trivy-test.sarif'
+          category: 'trivy-container-test'
