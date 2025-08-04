@@ -29,6 +29,7 @@ const (
 
 type slackConn struct {
 	rtm    *slack.RTM
+	client *slack.Client
 	userID string
 	config *config.Config
 	mu     sync.RWMutex
@@ -42,7 +43,9 @@ func newSlackConn(conf *config.Config) *slackConn {
 
 func (c *slackConn) Connect(ctx context.Context) (<-chan event, error) {
 	eventChan := make(chan event)
-	c.rtm = slack.New(c.config.Token, slack.OptionDebug(c.config.Debug)).NewRTM()
+	client := slack.New(c.config.Token, slack.OptionDebug(c.config.Debug))
+	c.client = client
+	c.rtm = client.NewRTM()
 	go c.rtm.ManageConnection()
 	go func() {
 		for {
@@ -109,12 +112,11 @@ func (c *slackConn) SendDM(userID string, message string) error {
 }
 
 func (c *slackConn) UploadFile(channel *channelID, message string, filename string, filetype string, file io.Reader) error {
-	_, err := c.rtm.UploadFile(slack.FileUploadParameters{
-		InitialComment:  message,
-		Filename:        filename,
-		Filetype:        filetype,
+	_, err := c.client.UploadFileV2(slack.UploadFileV2Parameters{
 		Reader:          file,
-		Channels:        []string{channel.Channel},
+		Filename:        filename,
+		Channel:         channel.Channel,
+		InitialComment:  message,
 		ThreadTimestamp: channel.Thread,
 	})
 	return err

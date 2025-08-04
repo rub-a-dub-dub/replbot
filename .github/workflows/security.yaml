@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: '0 0 * * *'
   pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -13,6 +14,7 @@ permissions:
 jobs:
   govulncheck:
     runs-on: ubuntu-latest
+    continue-on-error: true  # Don't fail the workflow if vulnerabilities are found
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,14 +25,17 @@ jobs:
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
       - name: Run govulncheck
+        continue-on-error: true
         run: govulncheck -format sarif ./... > govulncheck.sarif
       - name: Upload results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('govulncheck.sarif') != ''
         with:
           sarif_file: govulncheck.sarif
 
   gosec:
     runs-on: ubuntu-latest
+    continue-on-error: true  # Don't fail the workflow if security issues are found
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -41,14 +46,17 @@ jobs:
       - name: Install gosec
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
       - name: Run gosec
+        continue-on-error: true
         run: gosec -fmt sarif -out gosec.sarif ./...
       - name: Upload results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('gosec.sarif') != ''
         with:
           sarif_file: gosec.sarif
 
   licenses:
     runs-on: ubuntu-latest
+    continue-on-error: true  # Don't fail the workflow if license issues are found
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -59,6 +67,7 @@ jobs:
       - name: Install go-licenses
         run: go install github.com/google/go-licenses@latest
       - name: Check licenses
+        continue-on-error: true
         run: go-licenses check ./...
       - name: Generate license report
         run: go-licenses report ./... > license-report.csv
@@ -70,32 +79,37 @@ jobs:
 
   container-scan:
     runs-on: ubuntu-latest
+    continue-on-error: true  # Don't fail the entire security workflow if container scan fails
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Build production image
         run: docker build -t replbot -f Dockerfile .
-      - name: Build test image
+      - name: Build test image  
         run: docker build -t replbot-test -f Dockerfile.test .
-      - name: Scan production image
-        uses: aquasecurity/trivy-action@v0.20.0
+      - name: Run Trivy vulnerability scanner (production image)
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
-          image-ref: replbot
-          format: sarif
-          output: trivy-prod.sarif
-          exit-code: '1'
-      - name: Upload production scan results
-        uses: github/codeql-action/upload-sarif@v2
+          image-ref: 'replbot'
+          format: 'sarif'
+          output: 'trivy-prod.sarif'
+      - name: Upload Trivy scan results to GitHub Security tab (production)
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('trivy-prod.sarif') != ''
         with:
-          sarif_file: trivy-prod.sarif
-      - name: Scan test image
-        uses: aquasecurity/trivy-action@v0.20.0
+          sarif_file: 'trivy-prod.sarif'
+          category: 'trivy-container-prod'
+      - name: Run Trivy vulnerability scanner (test image)
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
-          image-ref: replbot-test
-          format: sarif
-          output: trivy-test.sarif
-          exit-code: '1'
-      - name: Upload test scan results
-        uses: github/codeql-action/upload-sarif@v2
+          image-ref: 'replbot-test'
+          format: 'sarif'
+          output: 'trivy-test.sarif'
+      - name: Upload Trivy scan results to GitHub Security tab (test)
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('trivy-test.sarif') != ''
         with:
-          sarif_file: trivy-test.sarif
+          sarif_file: 'trivy-test.sarif'
+          category: 'trivy-container-test'

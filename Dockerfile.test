@@ -1,6 +1,6 @@
 FROM golang:1.23-alpine
 
-# Install tools required for running tests
+# Install tools required for running tests and CGO dependencies
 RUN apk add --no-cache \
     bash \
     make \
@@ -9,11 +9,15 @@ RUN apk add --no-cache \
     tmux \
     vim \
     asciinema \
-    ttyd
+    ttyd \
+    gcc \
+    musl-dev
 
 WORKDIR /src
 
 COPY go.mod go.sum ./
+ENV GOTOOLCHAIN=local
+ENV CGO_ENABLED=1
 RUN go mod download
 
 COPY . .

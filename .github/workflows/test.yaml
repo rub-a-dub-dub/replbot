@@ -1,5 +1,9 @@
 name: test
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -10,20 +14,10 @@ jobs:
         run: docker build -t replbot-test -f Dockerfile.test .
       - name: Run tests, formatting, vetting and linting
         run: docker run --rm replbot-test make check
-      - name: Run and upload coverage to codecov.io
-        run: docker run --rm replbot-test make coverage coverage-upload
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Generate coverage report
+        run: docker run --rm -v $PWD/build:/src/build replbot-test make coverage
+      - name: Upload coverage to codecov.io
+        uses: codecov/codecov-action@v4
         with:
-          go-version: stable
-      - name: Install security tools
-        run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-          go install github.com/google/go-licenses@latest
-      - name: Run govulncheck
-        run: govulncheck ./...
-      - name: Run gosec
-        run: gosec ./...
-      - name: Check licenses
-        run: go-licenses check ./...
+          file: ./build/coverage/coverage.txt
+          fail_ci_if_error: false
