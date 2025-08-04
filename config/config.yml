@@ -26,6 +26,15 @@
 #
 bot-token: MUST_BE_SET
 
+# Slack App token used for socket mode connections.
+# Required for Slack connections. Must start with "xapp-".
+#
+# Format:    long cryptic string starting with xapp-
+# Default:   None
+# Required:  For Slack
+#
+app-token: ""
+
 # Directory containing your REPL scripts. REPLbot ships with a bunch of default scripts. Be sure
 # to check them out and add/remove scripts as you like.
 #
