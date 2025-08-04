@@ -102,9 +102,13 @@ func TestSessionResize(t *testing.T) {
 func createSession(t *testing.T, script string) (*session, *memConn) {
 	conf := createConfig(t)
 	conn := newMemConn(conf)
+	randID, err := util.RandomString(5)
+	if err != nil {
+		t.Fatal(err)
+	}
 	sconfig := &sessionConfig{
 		global:      conf,
-		id:          "sess_" + util.RandomString(5),
+		id:          "sess_" + randID,
 		user:        "phil",
 		control:     &channelID{"channel", "thread"},
 		terminal:    &channelID{"channel", ""},
