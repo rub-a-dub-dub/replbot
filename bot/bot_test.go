@@ -21,23 +21,23 @@ const (
 
 var (
 	testScripts = map[string]string{
-		"enter-name": `
-#!/bin/bash
+		"enter-name": `#!/bin/bash
 case "$1" in
   run)
     while true; do
       echo -n "Enter name: "
       read name
       echo "Hello $name!"
-    done 
+    done
     ;;
   *) ;;
 esac
 `,
-		"bash": `
-#!/bin/bash
+		"bash": `#!/bin/bash
 case "$1" in
-  run) bash -i ;;
+  run)
+    export PS1="$ "
+    bash -i ;;
   *) ;;
 esac
 `,
@@ -94,7 +94,8 @@ func TestBotBashSplitMode(t *testing.T) {
 		Message:     "@replbot bash",
 	})
 	assert.True(t, conn.MessageContainsWait("1", "REPL session started, @phil"))
-	assert.True(t, conn.MessageContainsWait("2", "$")) // this is stupid ...
+	// Accept either '$' or '#' as the initial shell prompt
+	assert.True(t, conn.MessageContainsWait("2", "$") || conn.MessageContainsWait("2", "#"))
 
 	conn.Event(&messageEvent{
 		ID:          "user-2",
@@ -127,7 +128,7 @@ func TestBotBashDMChannelOnlyMeAllowDeny(t *testing.T) {
 		Message:     "bash only-me channel", // no mention, because DM!
 	})
 	assert.True(t, conn.MessageContainsWait("1", "REPL session started, @phil"))
-	assert.True(t, conn.MessageContainsWait("2", "$")) // this is stupid ...
+	assert.True(t, conn.MessageContainsWait("2", "$") || conn.MessageContainsWait("2", "#"))
 
 	// Send message from someone that's not me to the channel
 	conn.Event(&messageEvent{
@@ -196,7 +197,7 @@ func TestBotBashWebTerminal(t *testing.T) {
 	assert.True(t, conn.MessageContainsWait("1", "REPL session started, @phil"))
 	assert.True(t, conn.MessageContainsWait("1", "Everyone can also *view and control*"))
 	assert.True(t, conn.MessageContainsWait("1", "http://localhost:12123/")) // web terminal URL
-	assert.True(t, conn.MessageContainsWait("2", "$"))                       // this is stupid ...
+	assert.True(t, conn.MessageContainsWait("2", "$") || conn.MessageContainsWait("2", "#"))
 
 	// Check that web terminal actually returns HTML
 	for i := 0; ; i++ {
@@ -243,7 +244,7 @@ func TestBotBashRecording(t *testing.T) {
 		Message:     "@replbot bash record",
 	})
 	assert.True(t, conn.MessageContainsWait("1", "REPL session started, @phil"))
-	assert.True(t, conn.MessageContainsWait("2", "$")) // this is stupid ...
+	assert.True(t, conn.MessageContainsWait("2", "$") || conn.MessageContainsWait("2", "#"))
 
 	// Send a super hard math problem
 	conn.Event(&messageEvent{
