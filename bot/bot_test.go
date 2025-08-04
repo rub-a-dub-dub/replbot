@@ -51,9 +51,7 @@ func TestBotIgnoreNonMentionsAndShowHelpMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 	go func() {
-		if err := robot.Run(); err != nil {
-			t.Logf("Robot run error: %v", err)
-		}
+		_ = robot.Run() // Run robot in background, errors handled by test logic
 	}()
 	defer robot.Stop()
 	conn := robot.conn.(*memConn)
@@ -86,9 +84,7 @@ func TestBotBashSplitMode(t *testing.T) {
 		t.Fatal(err)
 	}
 	go func() {
-		if err := robot.Run(); err != nil {
-			t.Logf("Robot run error: %v", err)
-		}
+		_ = robot.Run() // Run robot in background, errors handled by test logic
 	}()
 	defer robot.Stop()
 	conn := robot.conn.(*memConn)
@@ -123,9 +119,7 @@ func TestBotBashDMChannelOnlyMeAllowDeny(t *testing.T) {
 		t.Fatal(err)
 	}
 	go func() {
-		if err := robot.Run(); err != nil {
-			t.Logf("Robot run error: %v", err)
-		}
+		_ = robot.Run() // Run robot in background, errors handled by test logic
 	}()
 	defer robot.Stop()
 	conn := robot.conn.(*memConn)
@@ -194,9 +188,7 @@ func TestBotBashWebTerminal(t *testing.T) {
 		t.Fatal(err)
 	}
 	go func() {
-		if err := robot.Run(); err != nil {
-			t.Logf("Robot run error: %v", err)
-		}
+		_ = robot.Run() // Run robot in background, errors handled by test logic
 	}()
 	defer robot.Stop()
 	conn := robot.conn.(*memConn)
@@ -247,9 +239,7 @@ func TestBotBashRecording(t *testing.T) {
 		t.Fatal(err)
 	}
 	go func() {
-		if err := robot.Run(); err != nil {
-			t.Logf("Robot run error: %v", err)
-		}
+		_ = robot.Run() // Run robot in background, errors handled by test logic
 	}()
 	defer robot.Stop()
 	conn := robot.conn.(*memConn)

@@ -170,9 +170,7 @@ func createSession(t *testing.T, script string) (*session, *memConn) {
 	}
 	sess := newSession(sconfig, conn)
 	go func() {
-		if err := sess.Run(); err != nil {
-			t.Logf("Session run error: %v", err)
-		}
+		_ = sess.Run() // Run session in background, errors handled by test logic
 	}()
 	return sess, conn
 }
