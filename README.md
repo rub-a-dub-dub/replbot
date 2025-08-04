@@ -174,13 +174,25 @@ deb/rpm packages.
 - [ttyd](https://github.com/tsl0922/ttyd) if you'd like to use the [web terminal](#web-terminal) feature
 
 **Creating a REPLbot Slack app**:   
-REPLbot requires a Slack "Classic App (bot)", because of its use of the real time messaging (RTM)
-API. To create a classic app and acquire a Slack bot token, follow these steps:
-1. Create a [classic Slack app](https://api.slack.com/apps?new_classic_app=1)
-2. In the "App Home" section, add a "Legacy bot user"
-3. In the "OAuth & Permissions" section, click "Install to Workspace" (_this may require workspace admin approval_)
-4. Copy the "Bot User OAuth Token" starting with "xoxb-..."
-5. Create an "App-Level Token" with the "connections:write" scope for Socket Mode and copy the token starting with "xapp-..."
+REPLbot uses Slack's modern Socket Mode API for real-time communication. To create a Slack app and acquire the required tokens, follow these steps:
+1. Create a [new Slack app](https://api.slack.com/apps/new) (choose "From scratch")
+2. In "Socket Mode", enable Socket Mode and create an "App-Level Token" with the "connections:write" scope. Copy the token starting with "xapp-..."
+3. In "OAuth & Permissions", add the following Bot Token Scopes:
+   - `app_mentions:read` - to receive mentions
+   - `channels:history` - to read channel messages
+   - `channels:read` - to access channel information
+   - `chat:write` - to send messages
+   - `files:write` - to upload session recordings
+   - `im:history` - to read direct messages
+   - `im:read` - to access direct message information
+   - `im:write` - to send direct messages
+4. In "OAuth & Permissions", click "Install to Workspace" (_this may require workspace admin approval_)
+5. Copy the "Bot User OAuth Token" starting with "xoxb-..."
+6. In "Event Subscriptions", enable events and subscribe to these bot events:
+   - `app_mention` - when the bot is mentioned
+   - `message.channels` - messages in channels
+   - `message.im` - direct messages
+   - `member_joined_channel` - when users join channels
 
 **Creating a REPLbot Discord app**:   
 1. Create a [Discord app](https://discord.com/developers/applications) 
@@ -193,7 +205,10 @@ API. To create a classic app and acquire a Slack bot token, follow these steps:
 
 **Installing `replbot`**:   
 1. Make sure `tmux` and probably also `docker` are installed. Then install REPLbot using any of the methods below. 
-2. Then edit `/etc/replbot/config.yml` to add Slack or Discord bot token. REPLbot will figure out which one is which based on the format.
+2. Then edit `/etc/replbot/config.yml` to add your bot tokens:
+   - For Slack: Set both `bot-token` (xoxb-...) and `app-token` (xapp-...) 
+   - For Discord: Set only `bot-token`
+   - REPLbot will automatically detect the platform based on token format
 3. Review the scripts in `/etc/replbot/script.d`, and make sure that you have Docker installed if you'd like to use them.
 4. If you're running REPLbot as non-root user (such as when you install the deb/rpm), be sure to add the `replbot` user to the `docker` group: `sudo usermod -G docker -a replbot`.
 5. Then just run it with `replbot` (or `systemctl start replbot` when using the deb/rpm).
