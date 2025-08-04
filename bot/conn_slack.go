@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/slackevents"
+	"github.com/slack-go/slack/socketmode"
 	"heckel.io/replbot/config"
 	"io"
 	"log/slog"
@@ -28,11 +30,12 @@ const (
 )
 
 type slackConn struct {
-	rtm    *slack.RTM
-	client *slack.Client
-	userID string
-	config *config.Config
-	mu     sync.RWMutex
+	rtm          *slack.RTM
+	client       *slack.Client
+	socketClient *socketmode.Client //nolint:unused // Socket Mode client
+	userID       string
+	config       *config.Config
+	mu           sync.RWMutex
 }
 
 func newSlackConn(conf *config.Config) *slackConn {
@@ -191,6 +194,37 @@ func (c *slackConn) translateEvent(event slack.RTMEvent) event {
 	default:
 		return nil // Ignore other events
 	}
+}
+
+func (c *slackConn) translateSocketModeEvent(evt socketmode.Event) event { //nolint:unused
+	switch evt.Type {
+	case socketmode.EventTypeEventsAPI:
+		eventsAPIEvent, ok := evt.Data.(slackevents.EventsAPIEvent)
+		if !ok {
+			return nil
+		}
+		// Acknowledge immediately
+		c.socketClient.Ack(*evt.Request)
+
+		switch ev := eventsAPIEvent.InnerEvent.Data.(type) {
+		case *slackevents.MessageEvent:
+			return &messageEvent{
+				ID:          ev.TimeStamp,
+				Channel:     ev.Channel,
+				ChannelType: c.channelType(ev.Channel),
+				Thread:      ev.ThreadTimeStamp,
+				User:        ev.User,
+				Message:     ev.Text,
+			}
+		case *slackevents.MemberJoinedChannelEvent:
+			return &channelJoinedEvent{ev.Channel}
+		}
+	case socketmode.EventTypeConnecting:
+		slog.Info("connecting to Slack via Socket Mode")
+	case socketmode.EventTypeConnected:
+		slog.Info("connected to Slack via Socket Mode")
+	}
+	return nil
 }
 
 func (c *slackConn) handleMessageEvent(ev *slack.MessageEvent) event {
