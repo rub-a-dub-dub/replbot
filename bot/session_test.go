@@ -1,9 +1,11 @@
 package bot
 
 import (
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"heckel.io/replbot/config"
 	"heckel.io/replbot/util"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -76,6 +78,15 @@ func TestSessionCommands(t *testing.T) {
 	sess.UserInput("phil", "!c")
 	sess.UserInput("phil", "!d")
 	assert.True(t, util.WaitUntilNot(sess.Active, maxWaitTime))
+}
+
+func TestWriteShareClientScriptNotShare(t *testing.T) {
+	sess, _ := createSession(t, "bash")
+	defer sess.ForceClose()
+	err := sess.WriteShareClientScript(io.Discard)
+	var se *SessionError
+	assert.True(t, errors.As(err, &se))
+	assert.Equal(t, "NOT_SHARE_SESSION", se.Code)
 }
 
 func TestSessionResize(t *testing.T) {

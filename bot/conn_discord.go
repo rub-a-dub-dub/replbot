@@ -2,7 +2,6 @@ package bot
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"heckel.io/replbot/config"
@@ -56,7 +55,7 @@ func (c *discordConn) Connect(ctx context.Context) (<-chan event, error) {
 	}
 	c.session = discord
 	if discord.State == nil || discord.State.User == nil {
-		return nil, errors.New("unexpected internal state")
+		return nil, NewBotError("UNEXPECTED_STATE", "unexpected internal state", nil)
 	}
 	slog.Info("discord connected", "user", discord.State.User.Username, "id", discord.State.User.ID)
 	return eventChan, nil
@@ -144,7 +143,7 @@ func (c *discordConn) ParseMention(user string) (string, error) {
 	if matches := discordUserLinkRegex.FindStringSubmatch(user); len(matches) > 0 {
 		return matches[1], nil
 	}
-	return "", errors.New("invalid user")
+	return "", NewValidationError("INVALID_USER", "invalid user", nil)
 }
 
 func (c *discordConn) Unescape(s string) string {

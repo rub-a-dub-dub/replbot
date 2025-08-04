@@ -57,8 +57,8 @@ const (
 var (
 	//go:embed share_server.sh
 	shareServerScriptSource string
-	errNoScript             = errors.New("no script defined")
-	errHelpRequested        = errors.New("help requested")
+	errNoScript             = NewValidationError("NO_SCRIPT", "no script defined", nil)
+	errHelpRequested        = NewValidationError("HELP_REQUESTED", "help requested", nil)
 )
 
 // Bot is the main struct that provides REPLbot
@@ -75,9 +75,9 @@ type Bot struct {
 // New creates a new REPLbot instance using the given configuration
 func New(conf *config.Config) (*Bot, error) {
 	if len(conf.Scripts()) == 0 {
-		return nil, errors.New("no REPL scripts found in script dir")
+		return nil, NewConfigError("NO_SCRIPTS", "no REPL scripts found in script dir", nil)
 	} else if err := util.Run("tmux", "-V"); err != nil {
-		return nil, fmt.Errorf("tmux check failed: %s", err.Error())
+		return nil, fmt.Errorf("tmux check failed: %w", err)
 	}
 	var conn conn
 	switch conf.Platform() {
@@ -88,7 +88,7 @@ func New(conf *config.Config) (*Bot, error) {
 	case config.Mem:
 		conn = newMemConn(conf)
 	default:
-		return nil, fmt.Errorf("invalid type: %s", conf.Platform())
+		return nil, NewConfigError("INVALID_PLATFORM", fmt.Sprintf("invalid type: %s", conf.Platform()), nil)
 	}
 	return &Bot{
 		config:    conf,
@@ -192,7 +192,7 @@ func (b *Bot) handleMessageEvent(ev *messageEvent) error {
 	case config.Split:
 		return b.startSessionSplit(ev, conf)
 	default:
-		return fmt.Errorf("unexpected mode: %s", conf.controlMode)
+		return NewValidationError("UNEXPECTED_MODE", fmt.Sprintf("unexpected mode: %s", conf.controlMode), nil)
 	}
 }
 
@@ -262,7 +262,7 @@ func (b *Bot) parseSessionConfig(ev *messageEvent) (*sessionConfig, error) {
 			} else if s := b.config.Script(field); conf.script == "" && s != "" {
 				conf.script = s
 			} else {
-				return nil, fmt.Errorf(unknownCommandMessage, field) //lint:ignore ST1005 we'll pass this to the client
+				return nil, NewValidationError("UNKNOWN_COMMAND", fmt.Sprintf(unknownCommandMessage, field), nil)
 			}
 		}
 	}
@@ -376,7 +376,7 @@ func (b *Bot) handleHelp(channel, thread string, err error) error {
 		return b.conn.Send(target, misconfiguredMessage)
 	}
 	var messageTemplate string
-	if err == nil || err == errNoScript || err == errHelpRequested {
+	if err == nil || errors.Is(err, errNoScript) || errors.Is(err, errHelpRequested) {
 		messageTemplate = welcomeMessage + mentionMessage
 	} else {
 		messageTemplate = err.Error() + "\n\n" + mentionMessage
@@ -432,7 +432,7 @@ func (b *Bot) webHandler(w http.ResponseWriter, r *http.Request) {
 func (b *Bot) webHandlerInternal(w http.ResponseWriter, r *http.Request) error {
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) < 2 {
-		return errors.New("invalid prefix")
+		return NewValidationError("INVALID_PREFIX", "invalid prefix", nil)
 	}
 	prefix := parts[1]
 	b.mu.RLock()
@@ -443,7 +443,7 @@ func (b *Bot) webHandlerInternal(w http.ResponseWriter, r *http.Request) error {
 	}
 	b.mu.RUnlock()
 	if session == nil || webPort == 0 {
-		return fmt.Errorf("session with prefix %s not found", prefix)
+		return NewSessionError("SESSION_NOT_FOUND", fmt.Sprintf("session with prefix %s not found", prefix), nil)
 	}
 	if len(parts) < 3 { // must be /prefix/, not just /prefix
 		http.Redirect(w, r, r.URL.String()+"/", http.StatusTemporaryRedirect)

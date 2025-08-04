@@ -128,7 +128,7 @@ var (
 	alphanumericRegex        = regexp.MustCompile(`^([a-zA-Z0-9])$`)
 	asciinemaUploadURLRegex  = regexp.MustCompile(`(https?://\S+)`)
 	asciinemaUploadDaysRegex = regexp.MustCompile(`(\d+) days?`)
-	errExit                  = errors.New("exited REPL")
+	errExit                  = NewSessionError("EXITED_REPL", "exited REPL", nil)
 
 	//go:embed share_client.sh.gotmpl
 	shareClientScriptSource   string
@@ -295,7 +295,7 @@ func (s *session) Run() error {
 	if s.conf.record {
 		s.g.Go(s.monitorRecording)
 	}
-	if err := s.g.Wait(); err != nil && err != errExit {
+	if err := s.g.Wait(); err != nil && !errors.Is(err, errExit) {
 		return err
 	}
 	return nil
@@ -326,7 +326,7 @@ func (s *session) Active() bool {
 func (s *session) ForceClose() error {
 	_ = s.conn.Send(s.conf.control, forceCloseMessage)
 	s.cancelFn()
-	if err := s.g.Wait(); err != nil && err != errExit {
+	if err := s.g.Wait(); err != nil && !errors.Is(err, errExit) {
 		return err
 	}
 	return nil
@@ -334,11 +334,11 @@ func (s *session) ForceClose() error {
 
 func (s *session) WriteShareClientScript(w io.Writer) error {
 	if s.conf.share == nil {
-		return errors.New("not a share session")
+		return NewSessionError("NOT_SHARE_SESSION", "not a share session", nil)
 	}
 	host, port, err := net.SplitHostPort(s.conf.global.ShareHost)
 	if err != nil {
-		return fmt.Errorf("invalid config: %s", err.Error())
+		return fmt.Errorf("invalid config: %w", err)
 	}
 	shareConf := s.conf.share
 	sessionInfo := &sshSession{
@@ -1017,7 +1017,7 @@ func (s *session) maybeUploadAsciinemaRecording() (url string, expiry string, er
 		}
 	}
 	if url == "" {
-		return "", "", errors.New("no asciinema URL found")
+		return "", "", NewSessionError("NO_ASCIINEMA_URL", "no asciinema URL found", nil)
 	}
 	return url, expiry, nil
 }

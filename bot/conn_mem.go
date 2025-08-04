@@ -2,7 +2,6 @@ package bot
 
 import (
 	"context"
-	"errors"
 	"heckel.io/replbot/config"
 	"heckel.io/replbot/util"
 	"io"
@@ -134,7 +133,7 @@ func (c *memConn) ParseMention(user string) (string, error) {
 	if matches := memUserMentionRegex.FindStringSubmatch(user); len(matches) > 0 {
 		return matches[1], nil
 	}
-	return "", errors.New("invalid user")
+	return "", NewValidationError("INVALID_USER", "invalid user", nil)
 }
 
 func (c *memConn) Unescape(s string) string {
