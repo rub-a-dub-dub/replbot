@@ -1,0 +1,21 @@
+FROM golang:1.22-alpine
+
+# Install tools required for running tests
+RUN apk add --no-cache \
+    bash \
+    make \
+    git \
+    curl \
+    tmux \
+    vim \
+    asciinema \
+    ttyd
+
+WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+CMD ["go", "test", "./..."]
