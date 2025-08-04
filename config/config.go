@@ -69,7 +69,7 @@ type Config struct {
 }
 
 // New instantiates a default new config
-func New(token string, appToken string) *Config {
+func New(token, appToken string) *Config {
 	return &Config{
 		Token:                    token,
 		AppToken:                 appToken,
