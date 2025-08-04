@@ -247,8 +247,12 @@ func (b *Bot) parseSessionConfig(ev *messageEvent) (*sessionConfig, error) {
 					return nil, err
 				}
 				conf.script = shareServerScriptFile
+				user, err := util.RandomString(10)
+				if err != nil {
+					return nil, err
+				}
 				conf.share = &shareConfig{
-					user:          util.RandomString(10),
+					user:          user,
 					relayPort:     relayPort,
 					hostKeyPair:   hostKeyPair,
 					clientKeyPair: clientKeyPair,
