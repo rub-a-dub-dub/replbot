@@ -220,8 +220,20 @@ func (c *slackConn) translateSocketModeEvent(evt socketmode.Event) event {
 		}
 	case socketmode.EventTypeConnecting:
 		slog.Info("connecting to Slack via Socket Mode")
+	case socketmode.EventTypeConnectionError:
+		slog.Error("Socket Mode connection error", "error", evt.Data)
+		return &errorEvent{fmt.Errorf("connection error: %v", evt.Data)}
 	case socketmode.EventTypeConnected:
-		slog.Info("connected to Slack via Socket Mode")
+		// Get bot info to set userID
+		authTest, err := c.client.AuthTest()
+		if err != nil {
+			slog.Error("failed to get bot info", "error", err)
+			return &errorEvent{err}
+		}
+		c.mu.Lock()
+		c.userID = authTest.UserID
+		c.mu.Unlock()
+		slog.Info("connected to Slack", "user", authTest.User, "id", authTest.UserID)
 	}
 	return nil
 }
