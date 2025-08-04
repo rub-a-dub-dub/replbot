@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine
+FROM golang:1.23-alpine
 
 # Install tools required for running tests
 RUN apk add --no-cache \
