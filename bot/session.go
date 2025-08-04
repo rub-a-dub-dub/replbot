@@ -550,7 +550,7 @@ func (s *session) sessionStartedMessage() string {
 func (s *session) maybeTrimWindow(window string) string {
 	switch s.conf.windowMode {
 	case config.Full:
-		if s.conf.global.Platform() == config.Discord {
+		if p, _ := s.conf.global.Platform(); p == config.Discord {
 			return expandWindow(window)
 		}
 		return window
@@ -762,7 +762,8 @@ func (s *session) maybeSendMessageLengthWarning(size *config.Size) error {
 }
 
 func (s *session) shouldWarnMessageLength(size *config.Size) bool {
-	return s.conf.global.Platform() == config.Discord && (size == config.Medium || size == config.Large)
+	p, _ := s.conf.global.Platform()
+	return p == config.Discord && (size == config.Medium || size == config.Large)
 }
 
 func (s *session) handlePassthrough(input string) error {

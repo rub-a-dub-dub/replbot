@@ -308,7 +308,7 @@ func createConfig(t *testing.T) *config.Config {
 			t.Fatal(err)
 		}
 	}
-	conf := config.New("mem")
+	conf := config.New("mem", "")
 	conf.RefreshInterval = 30 * time.Millisecond
 	conf.ScriptDir = tempDir
 	return conf
