@@ -2,6 +2,7 @@
 [![Release](https://img.shields.io/github/release/binwiederhier/replbot.svg?color=success&style=flat-square)](https://github.com/binwiederhier/replbot/releases/latest)
 [![Go Reference](https://pkg.go.dev/badge/heckel.io/replbot.svg)](https://pkg.go.dev/heckel.io/replbot)
 [![Tests](https://github.com/binwiederhier/replbot/workflows/test/badge.svg)](https://github.com/binwiederhier/replbot/actions)
+[![Security](https://github.com/binwiederhier/replbot/actions/workflows/security.yaml/badge.svg)](https://github.com/binwiederhier/replbot/actions/workflows/security.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/binwiederhier/replbot)](https://goreportcard.com/report/github.com/binwiederhier/replbot)
 [![codecov](https://codecov.io/gh/binwiederhier/replbot/branch/master/graph/badge.svg?token=bdrFZttMsk)](https://codecov.io/gh/binwiederhier/replbot)
 [![Slack channel](https://img.shields.io/badge/slack-@gophers/binwiederhier-success.svg?logo=slack)](https://gophers.slack.com/archives/C01JMTPGF2Q)
