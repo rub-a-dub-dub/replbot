@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine
+FROM golang:1.24-alpine
 
 # Install tools required for running tests
 RUN apk add --no-cache \
@@ -14,6 +14,7 @@ RUN apk add --no-cache \
 WORKDIR /src
 
 COPY go.mod go.sum ./
+ENV GOTOOLCHAIN=local
 RUN go mod download
 
 COPY . .
