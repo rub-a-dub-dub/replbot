@@ -44,6 +44,8 @@ func TestBashShell(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	sess.UserInput("phil", "!n i")
+	// Give vim a moment to enter insert mode before checking.
+	time.Sleep(100 * time.Millisecond)
 	// Vim's insert mode indicator varies slightly across versions, so we
 	// check a couple of common patterns instead of relying on a single one.
 	found := conn.MessageContainsWait("2", "-- INSERT --") ||
