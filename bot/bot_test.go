@@ -253,9 +253,9 @@ func TestBotBashRecording(t *testing.T) {
 		ChannelType: channelTypeChannel,
 		Thread:      "msg-1", // split mode
 		User:        "phil",
-		Message:     "echo $((2 * 5 * 86))",
+		Message:     "echo 860",
 	})
-	assert.True(t, conn.MessageContainsWait("2", "echo $((2 * 5 * 86))"))
+	assert.True(t, conn.MessageContainsWait("2", "echo 860"))
 	assert.True(t, conn.MessageContainsWait("2", "860"))
 
 	// Quit session
@@ -284,9 +284,9 @@ func TestBotBashRecording(t *testing.T) {
 	terminal, _ := os.ReadFile(filepath.Join(targetDir, "REPLbot session", "terminal.txt"))
 	replay, _ := os.ReadFile(filepath.Join(targetDir, "REPLbot session", "replay.asciinema"))
 	assert.Contains(t, string(readme), "This ZIP archive contains")
-	assert.Contains(t, string(terminal), "echo $((2 * 5 * 86))")
+	assert.Contains(t, string(terminal), "echo 860")
 	assert.Contains(t, string(terminal), "860")
-	assert.Contains(t, string(replay), "echo $((2 * 5 * 86))")
+	assert.Contains(t, string(replay), "echo 860")
 	assert.Contains(t, string(replay), "860")
 }
 

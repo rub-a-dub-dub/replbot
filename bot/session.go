@@ -381,6 +381,9 @@ func (s *session) userInputLoop() error {
 
 func (s *session) handleUserInput(user, message string) error {
 	slog.Debug("user input", "session", s.conf.id, "user", user, "message", message)
+	if err := validateMessageLength(message); err != nil {
+		return s.conn.Send(s.conf.control, err.Error())
+	}
 	atomic.AddInt32(&s.userInputCount, 1)
 	for _, c := range s.commands {
 		if strings.HasPrefix(message, c.prefix) {
@@ -763,7 +766,12 @@ func (s *session) shouldWarnMessageLength(size *config.Size) bool {
 }
 
 func (s *session) handlePassthrough(input string) error {
-	return s.tmux.Paste(fmt.Sprintf("%s\n", s.conn.Unescape(input)))
+	cmd := s.conn.Unescape(input)
+	sanitized, err := sanitizeCommand(cmd)
+	if err != nil {
+		return s.conn.Send(s.conf.control, err.Error())
+	}
+	return s.tmux.Paste(fmt.Sprintf("%s\n", sanitized))
 }
 
 func (s *session) handleHelpCommand(_ string) error {
