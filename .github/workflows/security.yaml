@@ -1,0 +1,101 @@
+name: security
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+      - name: Run govulncheck
+        run: govulncheck -format sarif ./... > govulncheck.sarif
+      - name: Upload results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: govulncheck.sarif
+
+  gosec:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+      - name: Run gosec
+        run: gosec -fmt sarif -out gosec.sarif ./...
+      - name: Upload results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: gosec.sarif
+
+  licenses:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Install go-licenses
+        run: go install github.com/google/go-licenses@latest
+      - name: Check licenses
+        run: go-licenses check ./...
+      - name: Generate license report
+        run: go-licenses report ./... > license-report.csv
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: license-report.csv
+
+  container-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build -t replbot -f Dockerfile .
+      - name: Build test image
+        run: docker build -t replbot-test -f Dockerfile.test .
+      - name: Scan production image
+        uses: aquasecurity/trivy-action@v0.20.0
+        with:
+          image-ref: replbot
+          format: sarif
+          output: trivy-prod.sarif
+          exit-code: '1'
+      - name: Upload production scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: trivy-prod.sarif
+      - name: Scan test image
+        uses: aquasecurity/trivy-action@v0.20.0
+        with:
+          image-ref: replbot-test
+          format: sarif
+          output: trivy-test.sarif
+          exit-code: '1'
+      - name: Upload test scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: trivy-test.sarif
