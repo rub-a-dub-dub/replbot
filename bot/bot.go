@@ -177,6 +177,9 @@ func (b *Bot) handleEvent(e event) error {
 }
 
 func (b *Bot) handleMessageEvent(ev *messageEvent) error {
+	if err := validateMessageLength(ev.Message); err != nil {
+		return b.conn.Send(&channelID{Channel: ev.Channel, Thread: ev.Thread}, err.Error())
+	}
 	if b.maybeForwardMessage(ev) {
 		return nil // We forwarded the message
 	} else if ev.ChannelType == channelTypeUnknown {
@@ -238,6 +241,7 @@ func (b *Bot) parseSessionConfig(ev *messageEvent) (*sessionConfig, error) {
 		web:       b.config.DefaultWeb,
 		notifyWeb: b.webUpdated,
 	}
+	var err error
 	fields := strings.Fields(ev.Message)
 	for _, field := range fields {
 		switch field {
@@ -292,7 +296,14 @@ func (b *Bot) parseSessionConfig(ev *messageEvent) (*sessionConfig, error) {
 	if conf.script == "" {
 		return nil, errNoScript
 	}
-	return b.applySessionConfigDefaults(ev, conf)
+	conf, err = b.applySessionConfigDefaults(ev, conf)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateSessionConfig(conf); err != nil {
+		return nil, err
+	}
+	return conf, nil
 }
 
 func (b *Bot) applySessionConfigDefaults(ev *messageEvent, conf *sessionConfig) (*sessionConfig, error) {
@@ -365,6 +376,9 @@ func (b *Bot) startSessionSplit(ev *messageEvent, conf *sessionConfig) error {
 }
 
 func (b *Bot) startSession(conf *sessionConfig) error {
+	if err := validateSessionConfig(conf); err != nil {
+		return err
+	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	sess := newSession(conf, b.conn)
