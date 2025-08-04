@@ -7,7 +7,7 @@ import (
 	"github.com/slack-go/slack"
 	"heckel.io/replbot/config"
 	"io"
-	"log"
+	"log/slog"
 	"regexp"
 	"strings"
 	"sync"
@@ -73,7 +73,7 @@ func (c *slackConn) SendWithID(channel *channelID, message string) (string, erro
 			return responseTS, nil
 		}
 		if e, ok := err.(*slack.RateLimitedError); ok {
-			log.Printf("error: %s; sleeping before re-sending", err.Error())
+			slog.Warn("rate limited; sleeping before re-sending", "error", err)
 			time.Sleep(e.RetryAfter + additionalRateLimitDuration)
 			continue
 		}
@@ -89,7 +89,7 @@ func (c *slackConn) SendEphemeral(channel *channelID, userID, message string) er
 			return nil
 		}
 		if e, ok := err.(*slack.RateLimitedError); ok {
-			log.Printf("error: %s; sleeping before re-sending", err.Error())
+			slog.Warn("rate limited; sleeping before re-sending", "error", err)
 			time.Sleep(e.RetryAfter + additionalRateLimitDuration)
 			continue
 		}
@@ -129,7 +129,7 @@ func (c *slackConn) Update(channel *channelID, id string, message string) error 
 			return nil
 		}
 		if e, ok := err.(*slack.RateLimitedError); ok {
-			log.Printf("error: %s; sleeping before re-sending", err.Error())
+			slog.Warn("rate limited; sleeping before re-sending", "error", err)
 			time.Sleep(e.RetryAfter + additionalRateLimitDuration)
 			continue
 		}
@@ -213,7 +213,7 @@ func (c *slackConn) handleConnectedEvent(ev *slack.ConnectedEvent) event {
 		return errorEvent{errors.New("missing user info in connected event")}
 	}
 	c.userID = ev.Info.User.ID
-	log.Printf("Slack connected as user %s/%s", ev.Info.User.Name, ev.Info.User.ID)
+	slog.Info("slack connected", "user", ev.Info.User.Name, "id", ev.Info.User.ID)
 	return nil
 }
 
@@ -222,7 +222,7 @@ func (c *slackConn) handleChannelJoinedEvent(ev *slack.ChannelJoinedEvent) event
 }
 
 func (c *slackConn) handleErrorEvent(err error) event {
-	log.Printf("Error: %s\n", err.Error())
+	slog.Error("slack error", "error", err)
 	return nil
 }
 

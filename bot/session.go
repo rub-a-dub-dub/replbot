@@ -12,7 +12,7 @@ import (
 	"heckel.io/replbot/config"
 	"heckel.io/replbot/util"
 	"io"
-	"log"
+	"log/slog"
 	"net"
 	"os"
 	"os/exec"
@@ -141,10 +141,13 @@ var (
 // session represents a REPL session
 //
 // Slack:
-//   Channels and DMs have an ID (fields: Channel, Timestamp), and may have a ThreadTimestamp field
-//   to identify if they belong to a thread.
+//
+//	Channels and DMs have an ID (fields: Channel, Timestamp), and may have a ThreadTimestamp field
+//	to identify if they belong to a thread.
+//
 // Discord:
-//   Channels, DMs and Threads are all channels with an ID
+//
+//	Channels, DMs and Threads are all channels with an ID
 type session struct {
 	conf           *sessionConfig
 	conn           conn
@@ -264,19 +267,19 @@ func initSessionCommands(s *session) *session {
 
 // Run executes a REPL session. This function only returns on error or when gracefully exiting the session.
 func (s *session) Run() error {
-	log.Printf("[%s] Started REPL session", s.conf.id)
-	defer log.Printf("[%s] Closed REPL session", s.conf.id)
+	slog.Info("started REPL session", "session", s.conf.id)
+	defer slog.Info("closed REPL session", "session", s.conf.id)
 	env, err := s.getEnv()
 	if err != nil {
 		return err
 	}
 	command := s.createCommand()
 	if err := s.tmux.Start(env, command...); err != nil {
-		log.Printf("[%s] Failed to start tmux: %s", s.conf.id, err.Error())
+		slog.Error("failed to start tmux", "session", s.conf.id, "error", err)
 		return err
 	}
 	if err := s.maybeStartWeb(); err != nil {
-		log.Printf("[%s] Cannot start ttyd: %s", s.conf.id, err.Error())
+		slog.Error("cannot start ttyd", "session", s.conf.id, "error", err)
 		// We just disabled it, so we continue here
 	}
 	if err := s.conn.Send(s.conf.control, s.sessionStartedMessage()); err != nil {
@@ -377,7 +380,7 @@ func (s *session) userInputLoop() error {
 }
 
 func (s *session) handleUserInput(user, message string) error {
-	log.Printf("[%s] User %s> %s", s.conf.id, user, message)
+	slog.Debug("user input", "session", s.conf.id, "user", user, "message", message)
 	atomic.AddInt32(&s.userInputCount, 1)
 	for _, c := range s.commands {
 		if strings.HasPrefix(message, c.prefix) {
@@ -471,17 +474,17 @@ func (s *session) maybeAddCursor(window string) string {
 func (s *session) shutdownHandler() error {
 	<-s.ctx.Done()
 	if err := s.tmux.Stop(); err != nil {
-		log.Printf("[%s] Warning: unable to stop tmux: %s", s.conf.id, err.Error())
+		slog.Error("unable to stop tmux", "session", s.conf.id, "error", err)
 	}
 	cmd := exec.Command(s.conf.script, scriptKillCommand, s.scriptID)
 	if output, err := cmd.CombinedOutput(); err != nil {
-		log.Printf("[%s] Warning: unable to kill command: %s; command output: %s", s.conf.id, err.Error(), string(output))
+		slog.Error("unable to kill command", "session", s.conf.id, "error", err, "output", string(output))
 	}
 	if err := s.sendExitedMessage(); err != nil {
-		log.Printf("[%s] Warning: unable to exit message: %s", s.conf.id, err.Error())
+		slog.Error("unable to send exit message", "session", s.conf.id, "error", err)
 	}
 	if err := s.conn.Archive(s.conf.control); err != nil {
-		log.Printf("[%s] Warning: unable to archive thread: %s", s.conf.id, err.Error())
+		slog.Error("unable to archive thread", "session", s.conf.id, "error", err)
 	}
 	_ = os.Remove(s.sshUserFile())
 	_ = os.Remove(s.sshClientKeyFile())
@@ -509,9 +512,9 @@ func (s *session) activityMonitor() error {
 			return errExit
 		case <-s.warnTimer.C:
 			_ = s.conn.Send(s.conf.control, fmt.Sprintf(timeoutWarningMessage, s.conn.Mention(s.conf.user)))
-			log.Printf("[%s] Session has been idle for a long time. Warning sent to user.", s.conf.id)
+			slog.Info("session idle warning sent to user", "session", s.conf.id)
 		case <-s.closeTimer.C:
-			log.Printf("[%s] Idle timeout reached. Closing session.", s.conf.id)
+			slog.Info("idle timeout reached; closing session", "session", s.conf.id)
 			return errExit
 		}
 	}
@@ -608,7 +611,7 @@ func (s *session) createCommand() []string {
 
 func (s *session) maybeWrapAsciinemaCommand(command []string) []string {
 	if err := util.Run("asciinema", "--version"); err != nil {
-		log.Printf("[%s] Cannot record session, 'asciinema' command is missing.", s.conf.id)
+		slog.Info("cannot record session; 'asciinema' command is missing", "session", s.conf.id)
 		s.conf.record = false
 		return command
 	}
@@ -686,7 +689,7 @@ func (s *session) monitorRecording() error {
 func (s *session) sendExitedMessage() error {
 	if s.conf.record {
 		if err := s.sendExitedMessageWithRecording(); err != nil {
-			log.Printf("[%s] Warning: unable to upload recording: %s", s.conf.id, err.Error())
+			slog.Error("unable to upload recording", "session", s.conf.id, "error", err)
 			return s.sendExitedMessageWithoutRecording()
 		}
 		return nil
@@ -700,11 +703,11 @@ func (s *session) sendExitedMessageWithoutRecording() error {
 
 func (s *session) sendExitedMessageWithRecording() error {
 	if err := s.maybePatchAsciinemaRecordingFile(); err != nil {
-		log.Printf("[%s] Cannot patch asciinema session file: %s", s.conf.id, err.Error())
+		slog.Error("cannot patch asciinema session file", "session", s.conf.id, "error", err)
 	}
 	url, expiry, err := s.maybeUploadAsciinemaRecording()
 	if err != nil {
-		log.Printf("[%s] Cannot upload recorded asciinema session: %s", s.conf.id, err.Error())
+		slog.Error("cannot upload recorded asciinema session", "session", s.conf.id, "error", err)
 	}
 	filename := filepath.Join(os.TempDir(), "replbot_"+s.conf.id+".recording.zip")
 	file, err := s.createRecordingArchive(filename)
