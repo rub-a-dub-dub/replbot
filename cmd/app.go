@@ -106,36 +106,49 @@ func execRun(c *cli.Context) error {
 	}
 
 	// Validate options
+	var vErrs []error
 	if token == "" || token == "MUST_BE_SET" {
-		return errors.New("missing bot token, pass --bot-token, set REPLBOT_BOT_TOKEN env variable or bot-token config option")
-	} else if _, err := os.Stat(scriptDir); err != nil {
-		return fmt.Errorf("cannot find REPL directory %s, set --script-dir, set REPLBOT_SCRIPT_DIR env variable, or script-dir config option", scriptDir)
-	} else if timeout < time.Minute {
-		return fmt.Errorf("idle timeout has to be at least one minute")
+		vErrs = append(vErrs, bot.NewConfigError("MISSING_BOT_TOKEN", "missing bot token, pass --bot-token, set REPLBOT_BOT_TOKEN env variable or bot-token config option", nil))
+	}
+	if _, err := os.Stat(scriptDir); err != nil {
+		vErrs = append(vErrs, bot.NewConfigError("SCRIPT_DIR_NOT_FOUND", fmt.Sprintf("cannot find REPL directory %s, set --script-dir, set REPLBOT_SCRIPT_DIR env variable, or script-dir config option", scriptDir), err))
 	} else if entries, err := os.ReadDir(scriptDir); err != nil || len(entries) == 0 {
-		return errors.New("cannot read script directory, or directory empty")
-	} else if defaultControlMode != config.Channel && defaultControlMode != config.Thread && defaultControlMode != config.Split {
-		return errors.New("default mode must be 'channel', 'thread' or 'split'")
-	} else if defaultWindowMode != config.Full && defaultWindowMode != config.Trim {
-		return errors.New("default window mode must be 'full' or 'trim'")
-	} else if defaultAuthMode != config.OnlyMe && defaultAuthMode != config.Everyone {
-		return errors.New("default window mode must be 'full' or 'trim'")
-	} else if shareHost != "" && (shareKeyFile == "" || !util.FileExists(shareKeyFile)) {
-		return errors.New("share key file must be set and exist if share host is set, check --share-key-file or REPLBOT_SHARE_KEY_FILE")
-	} else if maxUserSessions > maxTotalSessions {
-		return errors.New("max total sessions must be larger or equal to max user sessions")
-	} else if err := util.Run("ttyd", "--version"); webHost != "" && err != nil {
-		return fmt.Errorf("cannot set --web-host; 'ttyd --version' test failed: %s", err.Error())
-	} else if webHost == "" && defaultWeb {
-		return fmt.Errorf("cannot set --default-web if --web-host is not set")
+		vErrs = append(vErrs, bot.NewConfigError("SCRIPT_DIR_EMPTY", "cannot read script directory, or directory empty", err))
+	}
+	if timeout < time.Minute {
+		vErrs = append(vErrs, bot.NewValidationError("IDLE_TIMEOUT_TOO_LOW", "idle timeout has to be at least one minute", nil))
+	}
+	if defaultControlMode != config.Channel && defaultControlMode != config.Thread && defaultControlMode != config.Split {
+		vErrs = append(vErrs, bot.NewValidationError("INVALID_CONTROL_MODE", "default mode must be 'channel', 'thread' or 'split'", nil))
+	}
+	if defaultWindowMode != config.Full && defaultWindowMode != config.Trim {
+		vErrs = append(vErrs, bot.NewValidationError("INVALID_WINDOW_MODE", "default window mode must be 'full' or 'trim'", nil))
+	}
+	if defaultAuthMode != config.OnlyMe && defaultAuthMode != config.Everyone {
+		vErrs = append(vErrs, bot.NewValidationError("INVALID_AUTH_MODE", "default window mode must be 'full' or 'trim'", nil))
+	}
+	if shareHost != "" && (shareKeyFile == "" || !util.FileExists(shareKeyFile)) {
+		vErrs = append(vErrs, bot.NewConfigError("MISSING_SHARE_KEY_FILE", "share key file must be set and exist if share host is set, check --share-key-file or REPLBOT_SHARE_KEY_FILE", nil))
+	}
+	if maxUserSessions > maxTotalSessions {
+		vErrs = append(vErrs, bot.NewValidationError("INVALID_SESSION_LIMITS", "max total sessions must be larger or equal to max user sessions", nil))
+	}
+	if err := util.Run("ttyd", "--version"); webHost != "" && err != nil {
+		vErrs = append(vErrs, fmt.Errorf("cannot set --web-host; 'ttyd --version' test failed: %w", err))
+	}
+	if webHost == "" && defaultWeb {
+		vErrs = append(vErrs, bot.NewValidationError("WEB_HOST_REQUIRED", "cannot set --default-web if --web-host is not set", nil))
 	}
 	cursorRate, err := parseCursorRate(cursor)
 	if err != nil {
-		return err
+		vErrs = append(vErrs, err)
 	}
 	defaultSize, err := config.ParseSize(c.String("default-size"))
 	if err != nil {
-		return err
+		vErrs = append(vErrs, bot.NewValidationError("INVALID_DEFAULT_SIZE", "invalid default size", err))
+	}
+	if len(vErrs) > 0 {
+		return errors.Join(vErrs...)
 	}
 
 	// Create main bot
@@ -188,9 +201,9 @@ func parseCursorRate(cursor string) (time.Duration, error) {
 	default:
 		cursorRate, err := time.ParseDuration(cursor)
 		if err != nil {
-			return 0, err
+			return 0, bot.NewValidationError("INVALID_CURSOR", "invalid cursor value", err)
 		} else if cursorRate < 500*time.Millisecond {
-			return 0, fmt.Errorf("cursor rate is too low, min allowed is 500ms, though that'll probably cause rate limiting issues too")
+			return 0, bot.NewValidationError("CURSOR_TOO_LOW", "cursor rate is too low, min allowed is 500ms, though that'll probably cause rate limiting issues too", nil)
 		} else if cursorRate < time.Second {
 			slog.Warn("cursor rate is really low; we'll get rate limited if there are too many shells open")
 		}

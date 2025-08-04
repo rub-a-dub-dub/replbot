@@ -2,7 +2,6 @@ package bot
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/slack-go/slack"
 	"heckel.io/replbot/config"
@@ -159,7 +158,7 @@ func (c *slackConn) ParseMention(user string) (string, error) {
 	if matches := slackUserLinkRegex.FindStringSubmatch(user); len(matches) > 0 {
 		return matches[1], nil
 	}
-	return "", errors.New("invalid user")
+	return "", NewValidationError("INVALID_USER", "invalid user", nil)
 }
 
 func (c *slackConn) Unescape(s string) string {
@@ -186,7 +185,7 @@ func (c *slackConn) translateEvent(event slack.RTMEvent) event {
 	case *slack.ConnectionErrorEvent:
 		return c.handleErrorEvent(ev)
 	case *slack.InvalidAuthEvent:
-		return &errorEvent{errors.New("invalid credentials")}
+		return &errorEvent{NewConfigError("INVALID_CREDENTIALS", "invalid credentials", nil)}
 	default:
 		return nil // Ignore other events
 	}
@@ -210,7 +209,7 @@ func (c *slackConn) handleConnectedEvent(ev *slack.ConnectedEvent) event {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if ev.Info == nil || ev.Info.User == nil || ev.Info.User.ID == "" {
-		return errorEvent{errors.New("missing user info in connected event")}
+		return errorEvent{NewBotError("MISSING_USER_INFO", "missing user info in connected event", nil)}
 	}
 	c.userID = ev.Info.User.ID
 	slog.Info("slack connected", "user", ev.Info.User.Name, "id", ev.Info.User.ID)
