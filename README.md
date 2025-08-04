@@ -276,6 +276,12 @@ make build-simple
 To build releases, I use [GoReleaser](https://goreleaser.com/). If you have that installed, you can run `make build` or
 `make build-snapshot`.
 
+## Upgrading
+
+* Requires Go 1.23 or newer.
+* The custom `github.com/binwiederhier/discordgo` fork has been replaced by the upstream
+  `github.com/bwmarrin/discordgo`. Remove any `replace` directives referencing the fork.
+
 ## Development
 
 This project uses Go's standard tooling along with
@@ -303,9 +309,8 @@ Third party tools/libraries:
 * [asciinema](https://asciinema.org/) (GPLv3) is used to record sessions
 * [ttyd](https://github.com/tsl0922/ttyd) (MIT) is used to run the web terminal
 * [github.com/urfave/cli/v2](https://github.com/urfave/cli/v2) (MIT) is used to drive the CLI
-* [discord-go](https://github.com/bwmarrin/discordgo) (BSD-3) is used for the Discord communication, specifically these two
-  [these](https://github.com/bwmarrin/discordgo/pull/922) [two](https://github.com/bwmarrin/discordgo/pull/982) pull requests
-  for thread support
+* [discord-go](https://github.com/bwmarrin/discordgo) (BSD-3) is used for the Discord communication and now includes native
+  thread support, removing the need for a custom fork
 * [slack-go](https://github.com/slack-go/slack) (BSD-2) is used for the Slack communication
 * [gliderlabs/ssh](https://github.com/gliderlabs/ssh) (BSD-3) is used for remote port forwarding for terminal sharing
 * [stretchr/testify](http://github.com/stretchr/testify) (MIT) is used in most of the tests 
