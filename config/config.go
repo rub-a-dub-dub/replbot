@@ -44,6 +44,7 @@ type RateLimit struct {
 // Config is the main config struct for the application. Use New to instantiate a default config struct.
 type Config struct {
 	Token                    string
+	AppToken                 string
 	ScriptDir                string
 	IdleTimeout              time.Duration
 	MaxTotalSessions         int
@@ -68,9 +69,10 @@ type Config struct {
 }
 
 // New instantiates a default new config
-func New(token string) *Config {
+func New(token, appToken string) *Config {
 	return &Config{
 		Token:                    token,
+		AppToken:                 appToken,
 		IdleTimeout:              DefaultIdleTimeout,
 		MaxTotalSessions:         DefaultMaxTotalSessions,
 		MaxUserSessions:          DefaultMaxUserSessions,

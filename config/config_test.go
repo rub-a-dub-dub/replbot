@@ -17,7 +17,7 @@ func TestNew(t *testing.T) {
 	if err := os.WriteFile(script2, []byte{}, 0700); err != nil {
 		t.Fatal(err)
 	}
-	conf := New("xoxb-slack-token")
+	conf := New("xoxb-slack-token", "")
 	conf.ScriptDir = dir
 	assert.Equal(t, Slack, conf.Platform())
 	assert.ElementsMatch(t, []string{"script1", "script2"}, conf.Scripts())
@@ -28,7 +28,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestNewDiscordShareHost(t *testing.T) {
-	conf := New("not-slack")
+	conf := New("not-slack", "")
 	conf.ShareHost = "localhost:2586"
 	conf.ScriptDir = "/does-not-exist"
 	assert.Equal(t, Discord, conf.Platform())
