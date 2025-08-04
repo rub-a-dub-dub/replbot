@@ -152,7 +152,7 @@ func execRun(c *cli.Context) error {
 	}
 
 	// Create main bot
-	conf := config.New(token)
+	conf := config.New(token, "")
 	conf.ScriptDir = scriptDir
 	conf.IdleTimeout = timeout
 	conf.MaxTotalSessions = maxTotalSessions

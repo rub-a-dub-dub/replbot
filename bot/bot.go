@@ -82,7 +82,11 @@ func New(conf *config.Config) (*Bot, error) {
 		return nil, fmt.Errorf("tmux check failed: %w", err)
 	}
 	var conn conn
-	switch conf.Platform() {
+	platform, err := conf.Platform()
+	if err != nil {
+		return nil, err
+	}
+	switch platform {
 	case config.Slack:
 		conn = newSlackConn(conf)
 	case config.Discord:
@@ -319,7 +323,7 @@ func (b *Bot) applySessionConfigDefaults(ev *messageEvent, conf *sessionConfig) 
 			conf.controlMode = b.config.DefaultControlMode
 		}
 	}
-	if b.config.Platform() == config.Discord && ev.ChannelType == channelTypeDM && conf.controlMode != config.Channel {
+	if p, _ := b.config.Platform(); p == config.Discord && ev.ChannelType == channelTypeDM && conf.controlMode != config.Channel {
 		conf.controlMode = config.Channel // special case: Discord does not support threads in direct messages
 	}
 	if conf.windowMode == "" {
