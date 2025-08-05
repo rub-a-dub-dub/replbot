@@ -250,19 +250,19 @@ func (c *slackConn) translateSocketModeEvent(evt socketmode.Event) event {
 		// Get bot info to set userID with timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		
+
 		authTest, err := c.client.AuthTestContext(ctx)
 		if err != nil {
 			slog.Error("failed to get bot info", "error", err)
 			return &errorEvent{fmt.Errorf("authentication failed: %w", err)}
 		}
-		
+
 		if authTest.UserID == "" {
 			err := fmt.Errorf("authentication succeeded but no user ID returned")
 			slog.Error("invalid auth response", "error", err)
 			return &errorEvent{err}
 		}
-		
+
 		c.mu.Lock()
 		c.userID = authTest.UserID
 		c.mu.Unlock()
