@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -22,6 +23,7 @@ func New() *cli.App {
 		&cli.StringFlag{Name: "config", Aliases: []string{"c"}, EnvVars: []string{"REPLBOT_CONFIG_FILE"}, Value: "/etc/replbot/config.yml", DefaultText: "/etc/replbot/config.yml", Usage: "config file"},
 		&cli.BoolFlag{Name: "debug", EnvVars: []string{"REPLBOT_DEBUG"}, Value: false, Usage: "enable debugging output"},
 		altsrc.NewStringFlag(&cli.StringFlag{Name: "bot-token", Aliases: []string{"t"}, EnvVars: []string{"REPLBOT_BOT_TOKEN"}, DefaultText: "none", Usage: "bot token"}),
+		altsrc.NewStringFlag(&cli.StringFlag{Name: "app-token", Aliases: []string{"p"}, EnvVars: []string{"SLACK_APP_TOKEN"}, Usage: "Slack app-level token (Socket Mode)", Required: false}),
 		altsrc.NewStringFlag(&cli.StringFlag{Name: "script-dir", Aliases: []string{"d"}, EnvVars: []string{"REPLBOT_SCRIPT_DIR"}, Value: "/etc/replbot/script.d", DefaultText: "/etc/replbot/script.d", Usage: "script directory"}),
 		altsrc.NewDurationFlag(&cli.DurationFlag{Name: "idle-timeout", Aliases: []string{"T"}, EnvVars: []string{"REPLBOT_IDLE_TIMEOUT"}, Value: config.DefaultIdleTimeout, Usage: "timeout after which sessions are ended"}),
 		altsrc.NewIntFlag(&cli.IntFlag{Name: "max-total-sessions", Aliases: []string{"S"}, EnvVars: []string{"REPLBOT_MAX_TOTAL_SESSIONS"}, Value: config.DefaultMaxTotalSessions, Usage: "max number of concurrent total sessions"}),
@@ -65,6 +67,7 @@ func execRun(c *cli.Context) error {
 
 	// Read all the options
 	token := c.String("bot-token")
+	appToken := c.String("app-token")
 	scriptDir := c.String("script-dir")
 	timeout := c.Duration("idle-timeout")
 	maxTotalSessions := c.Int("max-total-sessions")
@@ -110,6 +113,9 @@ func execRun(c *cli.Context) error {
 	if token == "" || token == "MUST_BE_SET" {
 		vErrs = append(vErrs, bot.NewConfigError("MISSING_BOT_TOKEN", "missing bot token, pass --bot-token, set REPLBOT_BOT_TOKEN env variable or bot-token config option", nil))
 	}
+	if strings.HasPrefix(token, "xoxb-") && appToken == "" {
+		vErrs = append(vErrs, bot.NewConfigError("MISSING_APP_TOKEN", "missing Slack app-level token, pass --app-token or set SLACK_APP_TOKEN env variable", nil))
+	}
 	if _, err := os.Stat(scriptDir); err != nil {
 		vErrs = append(vErrs, bot.NewConfigError("SCRIPT_DIR_NOT_FOUND", fmt.Sprintf("cannot find REPL directory %s, set --script-dir, set REPLBOT_SCRIPT_DIR env variable, or script-dir config option", scriptDir), err))
 	} else if entries, err := os.ReadDir(scriptDir); err != nil || len(entries) == 0 {
@@ -152,7 +158,7 @@ func execRun(c *cli.Context) error {
 	}
 
 	// Create main bot
-	conf := config.New(token)
+	conf := config.New(token, appToken)
 	conf.ScriptDir = scriptDir
 	conf.IdleTimeout = timeout
 	conf.MaxTotalSessions = maxTotalSessions

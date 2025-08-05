@@ -9,7 +9,7 @@ import (
 )
 
 func TestRateLimiterAllowAndCleanup(t *testing.T) {
-	conf := config.New("mem")
+	conf := config.New("mem", "")
 	conf.MessageRateLimit = config.RateLimit{Requests: 1, Burst: 1, Interval: time.Second}
 	conf.RateLimitCleanupInterval = 50 * time.Millisecond
 

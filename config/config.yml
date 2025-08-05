@@ -4,12 +4,15 @@
 # which kind of token it is.
 #
 # For Slack:
-#   REPLbot requires a Slack "Classic App (bot)", because of its use of the real time messaging (RTM)
-#   API. To create a classic app and acquire a Slack bot token, follow these steps:
-#     1. Create a classic app: https://api.slack.com/apps?new_classic_app=1
-#     2. In the "App Home" section, add a "Legacy bot user"
-#     3. In the "OAuth & Permissions" section, click "Install to Workspace"
-#     4. Copy the "Bot User OAuth Token" starting with "xoxb-..."
+#   REPLbot uses Slack's modern Socket Mode API. To create a Slack app and acquire the required tokens:
+#     1. Create a new Slack app: https://api.slack.com/apps/new (choose "From scratch")
+#     2. In "Socket Mode", enable Socket Mode and create an "App-Level Token" with "connections:write" scope
+#     3. In "OAuth & Permissions", add bot token scopes: app_mentions:read, channels:history, channels:read,
+#        chat:write, files:write, im:history, im:read, im:write
+#     4. In "OAuth & Permissions", click "Install to Workspace"
+#     5. Copy the "Bot User OAuth Token" starting with "xoxb-..."
+#     6. In "Event Subscriptions", enable events and subscribe to: app_mention, message.channels,
+#        message.im, member_joined_channel
 #
 # For Discord:
 #   1. Create an app: https://discord.com/developers/applications
@@ -25,6 +28,16 @@
 # Required:  Yes
 #
 bot-token: MUST_BE_SET
+
+# Slack App-Level token used for Socket Mode connections.
+# Required for Slack connections. Must start with "xapp-".
+# Created in "Socket Mode" section of your Slack app with "connections:write" scope.
+#
+# Format:    long cryptic string starting with xapp-
+# Default:   None
+# Required:  For Slack
+#
+app-token: ""
 
 # Directory containing your REPL scripts. REPLbot ships with a bunch of default scripts. Be sure
 # to check them out and add/remove scripts as you like.
