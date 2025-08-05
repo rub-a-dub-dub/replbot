@@ -55,3 +55,17 @@ func TestSlackUserTokenRequired(t *testing.T) {
 		t.Fatalf("expected ConfigError, got %T", err)
 	}
 }
+
+func TestSlackInvalidUserToken(t *testing.T) {
+	conf := confpkg.New("xoxb-slack-token", "xapp-slack-app-token")
+	conf.UserToken = "invalid-token"
+	_, err := conf.Platform()
+	assert.Error(t, err)
+	if cfgErr, ok := err.(*bot.ConfigError); ok {
+		assert.Equal(t, "INVALID_SLACK_USER_TOKEN", cfgErr.Code)
+	} else if cfgErr, ok := err.(*confpkg.ConfigError); ok {
+		assert.Equal(t, "INVALID_SLACK_USER_TOKEN", cfgErr.Code)
+	} else {
+		t.Fatalf("expected ConfigError, got %T", err)
+	}
+}
