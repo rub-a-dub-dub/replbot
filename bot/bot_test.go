@@ -216,9 +216,7 @@ func TestBotBashWebTerminal(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer func() {
-			_ = resp.Body.Close()
-		}()
+		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatal(err)

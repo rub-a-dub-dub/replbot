@@ -120,9 +120,7 @@ func zipAppendFile(zw *zip.Writer, name string, filename string) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = f.Close()
-	}()
+	defer f.Close()
 	w, err := zw.Create(name)
 	if err != nil {
 		return err

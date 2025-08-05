@@ -37,14 +37,10 @@ const (
 
 	// Event channel buffer size for better performance
 	eventChannelBuffer = 100
-
-	// Interval for keeping Slack presence active
-	presencePingInterval = 5 * time.Minute
 )
 
 type slackConn struct {
 	client       *slack.Client
-	userClient   *slack.Client
 	socketClient *socketmode.Client
 	cancel       context.CancelFunc
 	userID       string
@@ -96,11 +92,6 @@ func (c *slackConn) Connect(ctx context.Context) (<-chan event, error) {
 		return c.monitorConnection(gctx, eventChan)
 	})
 
-	// Start presence keep-alive goroutine
-	g.Go(func() error {
-		return c.keepPresence(gctx)
-	})
-
 	// Handle errgroup errors in a separate goroutine
 	go func() {
 		if err := g.Wait(); err != nil && ctx.Err() == nil {
@@ -125,14 +116,8 @@ func (c *slackConn) initializeConnection(ctx context.Context) error {
 	socketClient := socketmode.New(client,
 		socketmode.OptionDebug(c.config.Debug))
 
-	var userClient *slack.Client
-	if c.config.UserToken != "" {
-		userClient = slack.New(c.config.UserToken, slack.OptionDebug(c.config.Debug))
-	}
-
 	c.mu.Lock()
 	c.client = client
-	c.userClient = userClient
 	c.socketClient = socketClient
 	c.connected = false
 	c.reconnectCount = 0
@@ -275,38 +260,6 @@ func (c *slackConn) monitorConnection(ctx context.Context, eventChan chan<- even
 	}
 }
 
-// keepPresence sets and refreshes user presence while connected
-func (c *slackConn) keepPresence(ctx context.Context) error {
-	if c.userClient == nil {
-		return nil
-	}
-
-	// Set initial presence
-	if err := c.userClient.SetUserPresence("auto"); err != nil {
-		slog.Error("failed to set Slack presence", "error", err)
-	}
-	if err := c.userClient.SetUserAsActive(); err != nil {
-		slog.Error("failed to set Slack active", "error", err)
-	}
-
-	ticker := time.NewTicker(presencePingInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			if err := c.userClient.SetUserPresence("away"); err != nil {
-				slog.Error("failed to set Slack away", "error", err)
-			}
-			return nil
-		case <-ticker.C:
-			if err := c.userClient.SetUserAsActive(); err != nil {
-				slog.Warn("failed to refresh Slack presence", "error", err)
-			}
-		}
-	}
-}
-
 // reconnect attempts to reconnect with exponential backoff
 func (c *slackConn) reconnect(ctx context.Context) error {
 	c.mu.Lock()
@@ -430,11 +383,6 @@ func (c *slackConn) Archive(_ *channelID) error {
 func (c *slackConn) Close() error {
 	if c.cancel != nil {
 		c.cancel()
-	}
-	if c.userClient != nil {
-		if err := c.userClient.SetUserPresence("away"); err != nil {
-			slog.Error("failed to set Slack away", "error", err)
-		}
 	}
 	return nil
 }
