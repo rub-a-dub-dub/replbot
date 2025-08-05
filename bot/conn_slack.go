@@ -29,12 +29,12 @@ var (
 
 const (
 	additionalRateLimitDuration = 500 * time.Millisecond
-	
+
 	// Connection retry configuration
 	maxReconnectAttempts = 10
-	baseRetryDelay      = 1 * time.Second
-	maxRetryDelay       = 60 * time.Second
-	
+	baseRetryDelay       = 1 * time.Second
+	maxRetryDelay        = 60 * time.Second
+
 	// Event channel buffer size for better performance
 	eventChannelBuffer = 100
 )
@@ -46,7 +46,7 @@ type slackConn struct {
 	userID       string
 	config       *config.Config
 	mu           sync.RWMutex
-	
+
 	// Connection state management
 	connected      bool
 	reconnectCount int
@@ -62,7 +62,7 @@ func newSlackConn(conf *config.Config) *slackConn {
 func (c *slackConn) Connect(ctx context.Context) (<-chan event, error) {
 	// Use buffered channel for better performance
 	eventChan := make(chan event, eventChannelBuffer)
-	
+
 	ctx, cancel := context.WithCancel(ctx)
 	c.cancel = cancel
 
@@ -75,18 +75,18 @@ func (c *slackConn) Connect(ctx context.Context) (<-chan event, error) {
 
 	// Use errgroup for coordinated goroutine management
 	g, gctx := errgroup.WithContext(ctx)
-	
+
 	// Start event processing goroutine
 	g.Go(func() error {
 		defer close(eventChan)
 		return c.processEvents(gctx, eventChan)
 	})
-	
+
 	// Start connection management goroutine
 	g.Go(func() error {
 		return c.manageConnection(gctx, eventChan)
 	})
-	
+
 	// Start connection health monitoring goroutine
 	g.Go(func() error {
 		return c.monitorConnection(gctx, eventChan)
@@ -151,7 +151,7 @@ func (c *slackConn) initializeUserID(ctx context.Context) error {
 		if attempt < maxReconnectAttempts-1 {
 			delay := c.calculateRetryDelay(attempt)
 			slog.Warn("auth test failed, retrying", "error", err, "attempt", attempt+1, "delay", delay)
-			
+
 			select {
 			case <-time.After(delay):
 				continue
@@ -160,7 +160,7 @@ func (c *slackConn) initializeUserID(ctx context.Context) error {
 			}
 		}
 	}
-	
+
 	return fmt.Errorf("failed to initialize user ID after %d attempts", maxReconnectAttempts)
 }
 
@@ -181,7 +181,7 @@ func (c *slackConn) processEvents(ctx context.Context, eventChan chan<- event) e
 				c.mu.Unlock()
 				return fmt.Errorf("socket mode events channel closed")
 			}
-			
+
 			if ev := c.translateSocketModeEvent(evt); ev != nil {
 				select {
 				case eventChan <- ev:
@@ -467,7 +467,7 @@ func (c *slackConn) acknowledgeEvent(req socketmode.Request) error {
 	// Use a timeout to prevent hanging on acknowledgment
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	done := make(chan error, 1)
 	go func() {
 		defer func() {
@@ -478,7 +478,7 @@ func (c *slackConn) acknowledgeEvent(req socketmode.Request) error {
 		c.socketClient.Ack(req)
 		done <- nil
 	}()
-	
+
 	select {
 	case err := <-done:
 		return err
