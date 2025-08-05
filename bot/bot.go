@@ -585,7 +585,7 @@ func (b *Bot) sshReversePortForwardingCallback(ctx ssh.Context, host string, por
 	defer func() {
 		if !allow {
 			slog.Info("rejecting connection", "remote", conn.RemoteAddr())
-			conn.Close()
+			_ = conn.Close()
 		}
 	}()
 	if port < 1024 || (host != "localhost" && host != "127.0.0.1") {

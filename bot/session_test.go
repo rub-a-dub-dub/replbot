@@ -15,7 +15,9 @@ import (
 
 func TestSessionCustomShell(t *testing.T) {
 	sess, conn := createSession(t, "enter-name")
-	defer sess.ForceClose()
+	defer func() {
+		_ = sess.ForceClose()
+	}()
 	assert.True(t, conn.MessageContainsWait("1", "REPL session started, @phil"))
 	assert.True(t, conn.MessageContainsWait("2", "Enter name:"))
 
@@ -31,7 +33,9 @@ func TestSessionCustomShell(t *testing.T) {
 
 func TestBashShell(t *testing.T) {
 	sess, conn := createSession(t, "bash")
-	defer sess.ForceClose()
+	defer func() {
+		_ = sess.ForceClose()
+	}()
 
 	dir := t.TempDir()
 	sess.UserInput("phil", "cd "+dir)
@@ -94,7 +98,9 @@ func TestBashShell(t *testing.T) {
 
 func TestSessionCommands(t *testing.T) {
 	sess, conn := createSession(t, "bash")
-	defer sess.ForceClose()
+	defer func() {
+		_ = sess.ForceClose()
+	}()
 
 	dir := t.TempDir()
 	sess.UserInput("phil", "!e echo \"Phil\\bL\\nwas here\\ris here\"\\n")
@@ -121,7 +127,9 @@ func TestSessionCommands(t *testing.T) {
 
 func TestWriteShareClientScriptNotShare(t *testing.T) {
 	sess, _ := createSession(t, "bash")
-	defer sess.ForceClose()
+	defer func() {
+		_ = sess.ForceClose()
+	}()
 	err := sess.WriteShareClientScript(io.Discard)
 	var se *SessionError
 	assert.True(t, errors.As(err, &se))
