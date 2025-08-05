@@ -67,7 +67,7 @@ func RandomPort() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 	_, p, err := net.SplitHostPort(listener.Addr().String())
 	if err != nil {
 		return 0, err
@@ -148,8 +148,8 @@ func GenerateSSHKeyPair() (pair *SSHKeyPair, err error) {
 	}
 	pubKeyFile := privKeyFile + ".pub"
 	defer func() {
-		os.Remove(privKeyFile)
-		os.Remove(pubKeyFile)
+		_ = os.Remove(privKeyFile)
+		_ = os.Remove(pubKeyFile)
 	}()
 	if err := Run("ssh-keygen", "-t", "rsa", "-f", privKeyFile, "-q", "-N", ""); err != nil {
 		return nil, err

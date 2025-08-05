@@ -644,8 +644,8 @@ func (s *session) createRecordingArchive(filename string) (*os.File, error) {
 	recordingFile := s.tmux.RecordingFile()
 	asciinemaFile := s.asciinemaFile()
 	defer func() {
-		os.Remove(recordingFile)
-		os.Remove(asciinemaFile)
+		_ = os.Remove(recordingFile)
+		_ = os.Remove(asciinemaFile)
 	}()
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
@@ -718,8 +718,10 @@ func (s *session) sendExitedMessageWithRecording() error {
 		return err
 	}
 	defer func() {
-		file.Close()
-		os.Remove(filename)
+		if err := file.Close(); err != nil {
+			slog.Warn("failed to close recording file", "error", err)
+		}
+		_ = os.Remove(filename)
 	}()
 	message := sessionExitedWithRecordingMessage
 	if url != "" {
@@ -1034,17 +1036,23 @@ func (s *session) maybeUploadAsciinemaRecording() (url string, expiry string, er
 func (s *session) maybePatchAsciinemaRecordingFile() error {
 	replayFile := s.asciinemaFile()
 	tempReplayFile := fmt.Sprintf("%s.tmp", replayFile)
-	defer os.Remove(tempReplayFile)
+	defer func() {
+		_ = os.Remove(tempReplayFile)
+	}()
 	in, err := os.Open(s.asciinemaFile())
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() {
+		_ = in.Close()
+	}()
 	out, err := os.OpenFile(tempReplayFile, os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() {
+		_ = out.Close()
+	}()
 	rd := bufio.NewReader(in)
 	header, err := rd.ReadString('\n')
 	if err != nil {

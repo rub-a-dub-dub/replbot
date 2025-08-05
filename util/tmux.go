@@ -51,13 +51,13 @@ func NewTmux(id string, width, height int) *Tmux {
 
 // Start starts the tmux using the given command and arguments
 func (s *Tmux) Start(env map[string]string, command ...string) error {
-	defer os.Remove(s.scriptFile())
-	defer os.Remove(s.launchScriptFile())
+	defer func() { _ = os.Remove(s.scriptFile()) }()
+	defer func() { _ = os.Remove(s.launchScriptFile()) }()
 	script, err := os.OpenFile(s.scriptFile(), os.O_CREATE|os.O_WRONLY, 0700)
 	if err != nil {
 		return err
 	}
-	defer script.Close()
+	defer func() { _ = script.Close() }()
 	params := &tmuxScriptParams{
 		MainID:             s.mainID(),
 		FrameID:            s.frameID(),
@@ -86,7 +86,7 @@ func (s *Tmux) Active() bool {
 
 // Paste pastes the input into the tmux, as if the user entered it
 func (s *Tmux) Paste(input string) error {
-	defer os.Remove(s.bufferFile())
+	defer func() { _ = os.Remove(s.bufferFile()) }()
 	if err := os.WriteFile(s.bufferFile(), []byte(input), 0600); err != nil {
 		return err
 	}

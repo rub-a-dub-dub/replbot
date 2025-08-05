@@ -45,6 +45,7 @@ type RateLimit struct {
 type Config struct {
 	Token                    string
 	AppToken                 string
+	UserToken                string
 	ScriptDir                string
 	IdleTimeout              time.Duration
 	MaxTotalSessions         int
