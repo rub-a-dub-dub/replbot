@@ -53,6 +53,24 @@ people using the bot if you give them an entire REPL.
 </table>
 
 ## Usage
+
+### Command Line Options
+REPLbot supports several command line flags for configuration:
+
+```bash
+replbot [options]
+
+Options:
+  --config, -c              config file (default: /etc/replbot/config.yml)
+  --debug                   enable debugging output
+  --bot-token, -t           bot token (env: REPLBOT_BOT_TOKEN)
+  --app-token, -p           Slack app-level token for Socket Mode (env: SLACK_APP_TOKEN)
+  --script-dir, -d          script directory (default: /etc/replbot/script.d)
+  --idle-timeout, -T        timeout after which sessions are ended
+  --max-total-sessions, -S  max number of concurrent total sessions
+```
+
+### Chat Usage
 After [installing REPLbot](#installation), you may use it by tagging `@replbot` in Slack/Discord. For the most part it 
 should be pretty self-explanatory:
 
@@ -205,10 +223,15 @@ REPLbot uses Slack's modern Socket Mode API for real-time communication. To crea
 
 **Installing `replbot`**:   
 1. Make sure `tmux` and probably also `docker` are installed. Then install REPLbot using any of the methods below. 
-2. Then edit `/etc/replbot/config.yml` to add your bot tokens:
-   - For Slack: Set both `bot-token` (xoxb-...) and `app-token` (xapp-...) 
-   - For Discord: Set only `bot-token`
-   - REPLbot will automatically detect the platform based on token format
+2. Configure your bot tokens using one of these methods:
+   - **Config file**: Edit `/etc/replbot/config.yml` and set `bot-token` and `app-token`
+   - **Environment variables**: Set `REPLBOT_BOT_TOKEN` and `SLACK_APP_TOKEN`
+   - **.env file**: Create a `.env` file with `REPLBOT_BOT_TOKEN=` and `SLACK_APP_TOKEN=` entries
+   - **Command line**: Use `--bot-token` and `--app-token` flags
+   
+   For Slack: Set both `bot-token` (xoxb-...) and `app-token` (xapp-...)
+   For Discord: Set only `bot-token`
+   REPLbot will automatically detect the platform based on token format
 3. Review the scripts in `/etc/replbot/script.d`, and make sure that you have Docker installed if you'd like to use them.
 4. If you're running REPLbot as non-root user (such as when you install the deb/rpm), be sure to add the `replbot` user to the `docker` group: `sudo usermod -G docker -a replbot`.
 5. Then just run it with `replbot` (or `systemctl start replbot` when using the deb/rpm).
@@ -249,7 +272,8 @@ tar zxvf v0.6.4.tar.gz
 sudo mkdir /etc/replbot
 sudo cp -a replbot-0.6.4/config/{script.d,config.yml} /etc/replbot
 vi /etc/replbot/config.yml
-  # Configure at least "bot-token"
+  # Configure at least "bot-token" and "app-token" (for Slack)
+  # Or create a .env file with REPLBOT_BOT_TOKEN= and SLACK_APP_TOKEN= entries
   # To support web terminal, set "web-host" (e.g. to localhost:31001)
   # To support sharing, set "share-host" (e.g. to localhost:31002)
   

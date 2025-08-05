@@ -443,6 +443,15 @@ func (c *slackConn) translateSocketModeEvent(evt socketmode.Event) event {
 				User:        ev.User,
 				Message:     ev.Text,
 			}
+		case *slackevents.AppMentionEvent:
+			return &messageEvent{
+				ID:          ev.TimeStamp,
+				Channel:     ev.Channel,
+				ChannelType: c.channelType(ev.Channel),
+				Thread:      ev.ThreadTimeStamp,
+				User:        ev.User,
+				Message:     ev.Text,
+			}
 		case *slackevents.MemberJoinedChannelEvent:
 			return &channelJoinedEvent{ev.Channel}
 		}

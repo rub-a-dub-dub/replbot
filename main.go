@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
 	"github.com/urfave/cli/v2"
 	"heckel.io/replbot/cmd"
 	"log/slog"
@@ -17,6 +18,9 @@ var (
 )
 
 func main() {
+	// Load .env file if it exists (ignore errors since it's optional)
+	_ = godotenv.Load()
+
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
