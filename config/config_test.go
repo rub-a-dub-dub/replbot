@@ -18,6 +18,7 @@ func TestNew(t *testing.T) {
 		t.Fatal(err)
 	}
 	conf := New("xoxb-slack-token", "xapp-slack-app-token")
+	conf.UserToken = "xoxp-slack-user-token"
 	conf.ScriptDir = dir
 	platform, err := conf.Platform()
 	assert.NoError(t, err)
@@ -38,4 +39,15 @@ func TestNewDiscordShareHost(t *testing.T) {
 	assert.Equal(t, Discord, platform)
 	assert.Empty(t, conf.Scripts())
 	assert.True(t, conf.ShareEnabled())
+}
+
+func TestSlackUserTokenRequired(t *testing.T) {
+	conf := New("xoxb-slack-token", "xapp-slack-app-token")
+	_, err := conf.Platform()
+	assert.Error(t, err)
+	if cfgErr, ok := err.(*ConfigError); ok {
+		assert.Equal(t, "INVALID_SLACK_USER_TOKEN", cfgErr.Code)
+	} else {
+		t.Fatalf("expected ConfigError, got %T", err)
+	}
 }

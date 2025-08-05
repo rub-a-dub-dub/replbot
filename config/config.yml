@@ -40,11 +40,11 @@ bot-token: MUST_BE_SET
 app-token: ""
 
 # Slack user token used to set the bot's presence to online.
-# Optional; if set, must start with "xoxp-" and have the "users:write" scope.
+# Required for Slack connections. Must start with "xoxp-" and have the "users:write" scope.
 #
 # Format:    long cryptic string starting with xoxp-
 # Default:   None
-# Required:  No
+# Required:  For Slack
 #
 user-token: ""
 
