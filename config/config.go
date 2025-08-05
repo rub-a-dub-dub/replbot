@@ -101,6 +101,9 @@ func (c *Config) Platform() (Platform, error) {
 		if !strings.HasPrefix(c.Token, "xoxb-") {
 			return "", NewConfigError("INVALID_SLACK_BOT_TOKEN", "slack bot token must start with 'xoxb-'", nil)
 		}
+		if !strings.HasPrefix(c.UserToken, "xoxp-") {
+			return "", NewConfigError("INVALID_SLACK_USER_TOKEN", "slack user token must start with 'xoxp-'", nil)
+		}
 		return Slack, nil
 	}
 	return Discord, nil

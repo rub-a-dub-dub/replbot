@@ -24,7 +24,7 @@ func New() *cli.App {
 		&cli.BoolFlag{Name: "debug", EnvVars: []string{"REPLBOT_DEBUG"}, Value: false, Usage: "enable debugging output"},
 		altsrc.NewStringFlag(&cli.StringFlag{Name: "bot-token", Aliases: []string{"t"}, EnvVars: []string{"REPLBOT_BOT_TOKEN"}, DefaultText: "none", Usage: "bot token"}),
 		altsrc.NewStringFlag(&cli.StringFlag{Name: "app-token", Aliases: []string{"p"}, EnvVars: []string{"SLACK_APP_TOKEN"}, Usage: "Slack app-level token (Socket Mode)", Required: false}),
-		altsrc.NewStringFlag(&cli.StringFlag{Name: "user-token", Aliases: []string{"u"}, EnvVars: []string{"SLACK_USER_TOKEN"}, Usage: "Slack user token to set presence"}),
+		altsrc.NewStringFlag(&cli.StringFlag{Name: "user-token", Aliases: []string{"u"}, EnvVars: []string{"SLACK_USER_TOKEN"}, Usage: "Slack user token to set presence (required for Slack)"}),
 		altsrc.NewStringFlag(&cli.StringFlag{Name: "script-dir", Aliases: []string{"d"}, EnvVars: []string{"REPLBOT_SCRIPT_DIR"}, Value: "/etc/replbot/script.d", DefaultText: "/etc/replbot/script.d", Usage: "script directory"}),
 		altsrc.NewDurationFlag(&cli.DurationFlag{Name: "idle-timeout", Aliases: []string{"T"}, EnvVars: []string{"REPLBOT_IDLE_TIMEOUT"}, Value: config.DefaultIdleTimeout, Usage: "timeout after which sessions are ended"}),
 		altsrc.NewIntFlag(&cli.IntFlag{Name: "max-total-sessions", Aliases: []string{"S"}, EnvVars: []string{"REPLBOT_MAX_TOTAL_SESSIONS"}, Value: config.DefaultMaxTotalSessions, Usage: "max number of concurrent total sessions"}),
