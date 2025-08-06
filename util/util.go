@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -19,11 +20,17 @@ var (
 	nonAlphanumericCharsRegex = regexp.MustCompile(`[^A-Za-z0-9]`)
 	randomStringCharset       = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	tmuxBinaryPath            string // Global tmux binary path
+	tmuxPathOnce              sync.Once
 )
 
 // SetTmuxPath sets the global tmux binary path
+// This must be called before any Run commands that use tmux
 func SetTmuxPath(path string) {
+	// Force the sync.Once to run with our custom path
 	tmuxBinaryPath = path
+	tmuxPathOnce.Do(func() {
+		// Already set above, just ensure sync.Once is triggered
+	})
 }
 
 // SSHKeyPair represents an SSH key pair
@@ -47,23 +54,34 @@ func FileExists(filenames ...string) bool {
 	return true
 }
 
+// getTmuxPath returns the tmux binary path, using sync.Once for thread-safe initialization
+func getTmuxPath() string {
+	tmuxPathOnce.Do(func() {
+		// If already set via SetTmuxPath, keep it
+		if tmuxBinaryPath != "" {
+			return
+		}
+		
+		// Try to find the actual tmux binary
+		tmuxPaths := []string{"/opt/homebrew/bin/tmux", "/usr/bin/tmux", "/usr/local/bin/tmux"}
+		for _, path := range tmuxPaths {
+			if _, err := os.Stat(path); err == nil {
+				tmuxBinaryPath = path
+				return
+			}
+		}
+		
+		// Fall back to "tmux" if not found in standard locations
+		tmuxBinaryPath = "tmux"
+	})
+	return tmuxBinaryPath
+}
+
 // Run is a shortcut running an exec.Command
 func Run(command ...string) error {
 	// Handle tmux commands specially to avoid zsh alias issues
 	if command[0] == "tmux" {
-		if tmuxBinaryPath != "" {
-			// Use configured tmux path
-			command[0] = tmuxBinaryPath
-		} else {
-			// Try to find the actual tmux binary
-			tmuxPaths := []string{"/opt/homebrew/bin/tmux", "/usr/bin/tmux", "/usr/local/bin/tmux"}
-			for _, path := range tmuxPaths {
-				if _, err := os.Stat(path); err == nil {
-					command[0] = path
-					break
-				}
-			}
-		}
+		command[0] = getTmuxPath()
 	}
 
 	cmd := exec.Command(command[0], command[1:]...)

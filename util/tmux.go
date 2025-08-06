@@ -5,6 +5,7 @@ import (
 	_ "embed" // required by go:embed
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strconv"
@@ -83,7 +84,9 @@ func (s *Tmux) Start(env map[string]string, command ...string) error {
 
 	// Clean up the script file after execution
 	// The tmux.sh script will clean up config and launch script files
-	os.Remove(s.scriptFile())
+	if err := os.Remove(s.scriptFile()); err != nil {
+		slog.Debug("failed to remove tmux script file", "file", s.scriptFile(), "error", err)
+	}
 
 	return err
 }
@@ -174,7 +177,9 @@ func (s *Tmux) Stop() error {
 		_ = Run("tmux", "kill-session", "-t", s.frameID())
 	}
 	// Clean up launch script that wasn't removed during setup
-	os.Remove(s.launchScriptFile())
+	if err := os.Remove(s.launchScriptFile()); err != nil {
+		slog.Debug("failed to remove tmux launch script file", "file", s.launchScriptFile(), "error", err)
+	}
 	return nil
 }
 

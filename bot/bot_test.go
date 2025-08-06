@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -311,6 +312,7 @@ func createConfig(t *testing.T) *config.Config {
 	conf := config.New("mem", "")
 	conf.RefreshInterval = 30 * time.Millisecond
 	conf.ScriptDir = tempDir
+	conf.Debug = testing.Verbose() // Enable debug logging in verbose mode
 	return conf
 }
 
@@ -384,4 +386,187 @@ func unzip(src, dest string) error {
 	}
 
 	return nil
+}
+
+func TestBotThreadMessageHandling(t *testing.T) {
+	conf := createConfig(t)
+	robot, err := New(conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	go func() {
+		_ = robot.Run() // Run robot in background, errors handled by test logic
+	}()
+	defer robot.Stop()
+	conn := robot.conn.(*memConn)
+
+	// Start a bash session in split mode
+	conn.Event(&messageEvent{
+		ID:          "msg-1",
+		Channel:     "channel",
+		ChannelType: channelTypeChannel,
+		Thread:      "",
+		User:        "phil",
+		Message:     "@replbot bash",
+	})
+	assert.True(t, conn.MessageContainsWait("1", "REPL session started, @phil"))
+	assert.True(t, conn.MessageContainsWait("2", "$") || conn.MessageContainsWait("2", "#"))
+
+	// Send a thread message with @replbot mention (simulating app_mention event)
+	conn.Event(&messageEvent{
+		ID:          "msg-2",
+		Channel:     "channel",
+		ChannelType: channelTypeChannel,
+		Thread:      "msg-1",
+		User:        "phil",
+		Message:     "@replbot echo hello from thread",
+	})
+	assert.True(t, conn.MessageContainsWait("2", "echo hello from thread"))
+	assert.True(t, conn.MessageContainsWait("2", "hello from thread"))
+
+	// Test that more commands work in the thread
+	conn.Event(&messageEvent{
+		ID:          "msg-3",
+		Channel:     "channel",
+		ChannelType: channelTypeChannel,
+		Thread:      "msg-1",
+		User:        "phil",
+		Message:     "@replbot pwd",
+	})
+	// Should execute the command
+	assert.True(t, conn.MessageContainsWait("2", "pwd"))
+}
+
+func TestBotThreadMessageHandlingWithoutMention(t *testing.T) {
+	conf := createConfig(t)
+	robot, err := New(conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	go func() {
+		_ = robot.Run() // Run robot in background, errors handled by test logic
+	}()
+	defer robot.Stop()
+	conn := robot.conn.(*memConn)
+
+	// Start a bash session in split mode
+	conn.Event(&messageEvent{
+		ID:          "msg-1",
+		Channel:     "channel",
+		ChannelType: channelTypeChannel,
+		Thread:      "",
+		User:        "phil",
+		Message:     "@replbot bash",
+	})
+	assert.True(t, conn.MessageContainsWait("1", "REPL session started, @phil"))
+
+	// Send a thread message without @replbot mention
+	// This should still work in split mode when sent to the thread
+	conn.Event(&messageEvent{
+		ID:          "msg-2",
+		Channel:     "channel",
+		ChannelType: channelTypeChannel,
+		Thread:      "msg-1",
+		User:        "phil",
+		Message:     "echo no mention needed",
+	})
+	assert.True(t, conn.MessageContainsWait("2", "echo no mention needed"))
+	assert.True(t, conn.MessageContainsWait("2", "no mention needed"))
+}
+
+func TestBotThreadMessageRateLimiting(t *testing.T) {
+	conf := createConfig(t)
+	robot, err := New(conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	go func() {
+		_ = robot.Run() // Run robot in background, errors handled by test logic
+	}()
+	defer robot.Stop()
+	conn := robot.conn.(*memConn)
+
+	// Start a bash session
+	conn.Event(&messageEvent{
+		ID:          "msg-1",
+		Channel:     "channel",
+		ChannelType: channelTypeChannel,
+		Thread:      "",
+		User:        "spammer",
+		Message:     "@replbot bash",
+	})
+	assert.True(t, conn.MessageContainsWait("1", "REPL session started, @spammer"))
+
+	// Send many thread messages rapidly to trigger rate limiting
+	for i := 0; i < 15; i++ {
+		conn.Event(&messageEvent{
+			ID:          fmt.Sprintf("spam-%d", i),
+			Channel:     "channel",
+			ChannelType: channelTypeChannel,
+			Thread:      "msg-1",
+			User:        "spammer",
+			Message:     fmt.Sprintf("@replbot echo spam %d", i),
+		})
+	}
+
+	// Should see rate limit message
+	var foundRateLimit bool
+	for i := 1; i <= 20; i++ {
+		if msg := conn.Message(strconv.Itoa(i)); msg != nil {
+			if strings.Contains(msg.Message, "rate limit") || strings.Contains(msg.Message, "slow down") {
+				foundRateLimit = true
+				break
+			}
+		}
+	}
+	assert.True(t, foundRateLimit, "Should have received rate limit message")
+}
+
+func TestBotChannelModeIgnoresThreadMessages(t *testing.T) {
+	conf := createConfig(t)
+	robot, err := New(conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	go func() {
+		_ = robot.Run() // Run robot in background, errors handled by test logic
+	}()
+	defer robot.Stop()
+	conn := robot.conn.(*memConn)
+
+	// Start a bash session in channel mode
+	conn.Event(&messageEvent{
+		ID:          "msg-1",
+		Channel:     "channel",
+		ChannelType: channelTypeChannel,
+		Thread:      "",
+		User:        "phil",
+		Message:     "@replbot bash channel", // Explicitly set channel mode
+	})
+	assert.True(t, conn.MessageContainsWait("1", "REPL session started, @phil"))
+	assert.True(t, conn.MessageContainsWait("2", "$") || conn.MessageContainsWait("2", "#"))
+
+	// Send a thread message - should be ignored in channel mode
+	conn.Event(&messageEvent{
+		ID:          "msg-2",
+		Channel:     "channel",
+		ChannelType: channelTypeChannel,
+		Thread:      "msg-1", // Thread message
+		User:        "phil",
+		Message:     "@replbot echo this should be ignored",
+	})
+
+	// Send a channel message - should work
+	conn.Event(&messageEvent{
+		ID:          "msg-3",
+		Channel:     "channel",
+		ChannelType: channelTypeChannel,
+		Thread:      "", // Channel message
+		User:        "phil",
+		Message:     "echo this should work",
+	})
+
+	// Verify only the channel message was processed
+	assert.True(t, conn.MessageContainsWait("2", "this should work"))
+	assert.NotContains(t, conn.Message("2").Message, "this should be ignored")
 }

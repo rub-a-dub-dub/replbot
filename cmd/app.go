@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -147,8 +148,26 @@ func execRun(c *cli.Context) error {
 	if webHost == "" && defaultWeb {
 		vErrs = append(vErrs, bot.NewValidationError("WEB_HOST_REQUIRED", "cannot set --default-web if --web-host is not set", nil))
 	}
-	if tmuxPath != "" && !util.FileExists(tmuxPath) {
-		vErrs = append(vErrs, bot.NewConfigError("TMUX_PATH_NOT_FOUND", fmt.Sprintf("specified tmux path %s does not exist", tmuxPath), nil))
+	if tmuxPath != "" {
+		if !util.FileExists(tmuxPath) {
+			vErrs = append(vErrs, bot.NewConfigError("TMUX_PATH_NOT_FOUND", fmt.Sprintf("specified tmux path %s does not exist", tmuxPath), nil))
+		} else if info, err := os.Stat(tmuxPath); err == nil && info.Mode()&0111 == 0 {
+			vErrs = append(vErrs, bot.NewConfigError("TMUX_PATH_NOT_EXECUTABLE", fmt.Sprintf("specified tmux path %s is not executable", tmuxPath), nil))
+		} else {
+			// Validate tmux path is in expected directories for security
+			absPath, _ := filepath.Abs(tmuxPath)
+			validPaths := []string{"/usr/bin/", "/usr/local/bin/", "/opt/homebrew/bin/", "/bin/", "/sbin/"}
+			isValid := false
+			for _, prefix := range validPaths {
+				if strings.HasPrefix(absPath, prefix) {
+					isValid = true
+					break
+				}
+			}
+			if !isValid {
+				vErrs = append(vErrs, bot.NewConfigError("TMUX_PATH_UNSAFE", fmt.Sprintf("tmux path %s is not in a standard system directory", tmuxPath), nil))
+			}
+		}
 	}
 	cursorRate, err := parseCursorRate(cursor)
 	if err != nil {
