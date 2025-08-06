@@ -211,13 +211,18 @@ func TestWaitUntil(t *testing.T) {
 }
 
 func TestStringContainsWait(t *testing.T) {
+	var mu sync.Mutex
 	content := "initial"
 	go func() {
 		time.Sleep(20 * time.Millisecond)
+		mu.Lock()
 		content = "initial content with target"
+		mu.Unlock()
 	}()
 
 	result := StringContainsWait(func() string {
+		mu.Lock()
+		defer mu.Unlock()
 		return content
 	}, "target", 100*time.Millisecond)
 
