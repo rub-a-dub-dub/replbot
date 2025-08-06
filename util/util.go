@@ -61,7 +61,7 @@ func getTmuxPath() string {
 		if tmuxBinaryPath != "" {
 			return
 		}
-		
+
 		// Try to find the actual tmux binary
 		tmuxPaths := []string{"/opt/homebrew/bin/tmux", "/usr/bin/tmux", "/usr/local/bin/tmux"}
 		for _, path := range tmuxPaths {
@@ -70,7 +70,7 @@ func getTmuxPath() string {
 				return
 			}
 		}
-		
+
 		// Fall back to "tmux" if not found in standard locations
 		tmuxBinaryPath = "tmux"
 	})

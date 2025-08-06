@@ -113,7 +113,7 @@ func TestTmuxPathValidation(t *testing.T) {
 			tmuxPath := tt.tmuxPath
 			var hasError bool
 			var errorCode string
-			
+
 			if tmuxPath != "" {
 				if _, err := os.Stat(tmuxPath); os.IsNotExist(err) {
 					hasError = true
@@ -138,7 +138,7 @@ func TestTmuxPathValidation(t *testing.T) {
 					}
 				}
 			}
-			
+
 			assert.Equal(t, tt.shouldError, hasError, "Expected error: %v, got error: %v", tt.shouldError, hasError)
 			if tt.shouldError {
 				assert.Equal(t, tt.errorCode, errorCode, "Expected error code: %s, got: %s", tt.errorCode, errorCode)
