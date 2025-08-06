@@ -3,6 +3,27 @@
 
 set -e
 
+# Find the tmux binary to avoid zsh alias issues
+TMUX_BIN="{{.TmuxPath}}"
+if [ -z "$TMUX_BIN" ]; then
+  for path in /opt/homebrew/bin/tmux /usr/bin/tmux /usr/local/bin/tmux; do
+    if [ -x "$path" ]; then
+      TMUX_BIN="$path"
+      break
+    fi
+  done
+fi
+
+if [ -z "$TMUX_BIN" ]; then
+  echo "ERROR: Could not find tmux binary" >&2
+  exit 1
+fi
+
+# Use function to ensure we always use the binary
+tmux() {
+  "$TMUX_BIN" "$@"
+}
+
 main_id="{{.MainID}}"
 frame_id="{{.FrameID}}"
 window_width="{{.Width}}"
@@ -31,18 +52,22 @@ TMUXCONF
 # Write launch script
 cat > "${launch_script_file}" <<LAUNCHSCRIPT
 #!/bin/sh
-set -e
 export {{ range $key, $value := .Env }}{{ $key }}="{{ $value }}" {{ end }}
-${command}
+exec ${command}
 LAUNCHSCRIPT
 chmod 700 "${launch_script_file}"
 
 # Start main tmux session
-tmux -f "${config_file}" new-session -s "${main_id}" -d "${launch_script_file}"
+if ! tmux -f "${config_file}" new-session -s "${main_id}" -d "${launch_script_file}"; then
+  exit 1
+fi
+
+
 tmux bind-key -n C-F12 detach
 tmux set-option -t "${main_id}" status off
 tmux set-option -t "${main_id}" prefix none
-tmux set-option -t "${main_id}" remain-on-exit
+# Set remain-on-exit to 'on' explicitly
+tmux set-option -t "${main_id}" remain-on-exit on
 tmux set-hook -t "${main_id}" pane-died "capture-pane -S- -E-; save-buffer '${capture_file}'; kill-pane"
 if [ -n "${supports_window_size}" ]; then
   tmux set-option -t "${main_id}" window-size smallest # default is 'latest' as of tmux >= 2.9
@@ -59,6 +84,7 @@ if [ -n "${supports_window_size}" ]; then
   tmux set-option -t "${frame_id}" window-size smallest # default is 'latest' as of tmux >= 2.9
 fi
 
-# Clean exit
-rm -f "${config_file}" "${launch_script_file}"
+# Clean exit - only remove config file, not launch script
+# The launch script needs to exist when tmux starts executing it
+rm -f "${config_file}"
 trap - EXIT

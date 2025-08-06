@@ -42,6 +42,7 @@ func New() *cli.App {
 		altsrc.NewStringFlag(&cli.StringFlag{Name: "web-host", Aliases: []string{"Y"}, EnvVars: []string{"REPLBOT_WEB_ADDRESS"}, Usage: "hostname:port used to provide the web terminal feature"}),
 		altsrc.NewStringFlag(&cli.StringFlag{Name: "share-host", Aliases: []string{"H"}, EnvVars: []string{"REPLBOT_SHARE_HOST"}, Usage: "SSH hostname:port, used for terminal sharing"}),
 		altsrc.NewStringFlag(&cli.StringFlag{Name: "share-key-file", Aliases: []string{"K"}, EnvVars: []string{"REPLBOT_SHARE_KEY_FILE"}, Value: "/etc/replbot/hostkey", Usage: "SSH host key file, used for terminal sharing"}),
+		altsrc.NewStringFlag(&cli.StringFlag{Name: "tmux-path", EnvVars: []string{"TMUX_PATH"}, Usage: "Path to tmux binary (auto-detected if not specified)"}),
 	}
 	return &cli.App{
 		Name:                   "replbot",
@@ -79,6 +80,7 @@ func execRun(c *cli.Context) error {
 	webHost := c.String("web-host")
 	shareHost := c.String("share-host")
 	shareKeyFile := c.String("share-key-file")
+	tmuxPath := c.String("tmux-path")
 	debug := c.Bool("debug")
 	if debug {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})))
@@ -145,6 +147,9 @@ func execRun(c *cli.Context) error {
 	if webHost == "" && defaultWeb {
 		vErrs = append(vErrs, bot.NewValidationError("WEB_HOST_REQUIRED", "cannot set --default-web if --web-host is not set", nil))
 	}
+	if tmuxPath != "" && !util.FileExists(tmuxPath) {
+		vErrs = append(vErrs, bot.NewConfigError("TMUX_PATH_NOT_FOUND", fmt.Sprintf("specified tmux path %s does not exist", tmuxPath), nil))
+	}
 	cursorRate, err := parseCursorRate(cursor)
 	if err != nil {
 		vErrs = append(vErrs, err)
@@ -174,6 +179,7 @@ func execRun(c *cli.Context) error {
 	conf.WebHost = webHost
 	conf.ShareHost = shareHost
 	conf.ShareKeyFile = shareKeyFile
+	conf.TmuxPath = tmuxPath
 	conf.Debug = debug
 	robot, err := bot.New(conf)
 	if err != nil {

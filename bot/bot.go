@@ -76,6 +76,11 @@ type Bot struct {
 
 // New creates a new REPLbot instance using the given configuration
 func New(conf *config.Config) (*Bot, error) {
+	// Set the global tmux path if configured
+	if conf.TmuxPath != "" {
+		util.SetTmuxPath(conf.TmuxPath)
+	}
+	
 	if len(conf.Scripts()) == 0 {
 		return nil, NewConfigError("NO_SCRIPTS", "no REPL scripts found in script dir", nil)
 	} else if err := util.Run("tmux", "-V"); err != nil {

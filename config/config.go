@@ -61,6 +61,7 @@ type Config struct {
 	UploadRecording          bool
 	Cursor                   time.Duration
 	RefreshInterval          time.Duration
+	TmuxPath                 string
 	Debug                    bool
 	MessageRateLimit         RateLimit
 	SessionRateLimit         RateLimit

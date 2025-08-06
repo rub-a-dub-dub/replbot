@@ -222,7 +222,7 @@ func newSession(conf *sessionConfig, conn conn) *session {
 		conn:           conn,
 		scriptID:       fmt.Sprintf("replbot_%s", conf.id),
 		authUsers:      make(map[string]bool),
-		tmux:           util.NewTmux(conf.id, conf.size.Width, conf.size.Height),
+		tmux:           util.NewTmux(conf.id, conf.size.Width, conf.size.Height, conf.global.TmuxPath),
 		userInputChan:  make(chan [2]string, 10), // buffered!
 		userInputCount: 0,
 		forceResend:    make(chan bool),
@@ -267,35 +267,74 @@ func initSessionCommands(s *session) *session {
 
 // Run executes a REPL session. This function only returns on error or when gracefully exiting the session.
 func (s *session) Run() error {
-	slog.Info("started REPL session", "session", s.conf.id)
+	slog.Info("started REPL session", "session", s.conf.id, "script", s.conf.script)
 	defer slog.Info("closed REPL session", "session", s.conf.id)
 	env, err := s.getEnv()
 	if err != nil {
+		slog.Error("failed to get env", "session", s.conf.id, "error", err)
 		return err
 	}
 	command := s.createCommand()
+	slog.Info("starting tmux", "session", s.conf.id, "command", command)
 	if err := s.tmux.Start(env, command...); err != nil {
 		slog.Error("failed to start tmux", "session", s.conf.id, "error", err)
 		return err
 	}
+	slog.Debug("tmux started successfully", "session", s.conf.id)
+	
+	// Give tmux a moment to set up the session properly
+	time.Sleep(500 * time.Millisecond)
+	
+	// Check if tmux is actually running
+	if !s.tmux.Active() {
+		slog.Error("tmux session not active after start", "session", s.conf.id)
+		return fmt.Errorf("tmux session failed to start")
+	}
+	
 	if err := s.maybeStartWeb(); err != nil {
 		slog.Error("cannot start ttyd", "session", s.conf.id, "error", err)
 		// We just disabled it, so we continue here
 	}
 	if err := s.conn.Send(s.conf.control, s.sessionStartedMessage()); err != nil {
+		slog.Error("failed to send session started message", "session", s.conf.id, "error", err)
 		return err
 	}
 	if err := s.maybeSendStartShareMessage(); err != nil {
 		return err
 	}
-	s.g.Go(s.userInputLoop)
-	s.g.Go(s.commandOutputLoop)
-	s.g.Go(s.activityMonitor)
-	s.g.Go(s.shutdownHandler)
+	
+	slog.Debug("launching goroutines", "session", s.conf.id)
+	s.g.Go(func() error {
+		slog.Debug("userInputLoop started", "session", s.conf.id)
+		err := s.userInputLoop()
+		slog.Debug("userInputLoop ended", "session", s.conf.id, "error", err)
+		return err
+	})
+	s.g.Go(func() error {
+		slog.Debug("commandOutputLoop started", "session", s.conf.id)
+		err := s.commandOutputLoop()
+		slog.Debug("commandOutputLoop ended", "session", s.conf.id, "error", err)
+		return err
+	})
+	s.g.Go(func() error {
+		slog.Debug("activityMonitor started", "session", s.conf.id)
+		err := s.activityMonitor()
+		slog.Debug("activityMonitor ended", "session", s.conf.id, "error", err)
+		return err
+	})
+	s.g.Go(func() error {
+		slog.Debug("shutdownHandler started", "session", s.conf.id)
+		err := s.shutdownHandler()
+		slog.Debug("shutdownHandler ended", "session", s.conf.id, "error", err)
+		return err
+	})
 	if s.conf.record {
 		s.g.Go(s.monitorRecording)
 	}
+	
+	slog.Debug("waiting for goroutines", "session", s.conf.id)
 	if err := s.g.Wait(); err != nil && !errors.Is(err, errExit) {
+		slog.Error("session error", "session", s.conf.id, "error", err)
 		return err
 	}
 	return nil
@@ -420,11 +459,28 @@ func (s *session) commandOutputLoop() error {
 func (s *session) maybeRefreshTerminal(last, lastID string) (string, string, error) {
 	current, err := s.tmux.Capture()
 	if err != nil {
+		tmuxActive := s.tmux.Active()
+		slog.Error("tmux capture failed", "session", s.conf.id, "error", err, "tmux_active", tmuxActive, "lastID", lastID)
+		
+		// Add a small retry mechanism for the first capture
+		if lastID == "" && tmuxActive {
+			slog.Debug("retrying first capture after delay", "session", s.conf.id)
+			time.Sleep(100 * time.Millisecond)
+			current, err = s.tmux.Capture()
+			if err == nil {
+				slog.Debug("retry successful", "session", s.conf.id)
+				goto captureSuccess
+			}
+			slog.Error("retry failed", "session", s.conf.id, "error", err)
+		}
+		
 		if lastID != "" {
 			_ = s.conn.Update(s.conf.terminal, lastID, util.FormatMarkdownCode(addExitedMessage(sanitizeWindow(removeTmuxBorder(last))))) // Show "(REPL exited.)" in terminal
 		}
 		return "", "", errExit // The command may have ended, gracefully exit
 	}
+	
+captureSuccess:
 	current = s.maybeAddCursor(s.maybeTrimWindow(sanitizeWindow(removeTmuxBorder(current))))
 	if current == last {
 		return last, lastID, nil
@@ -605,6 +661,20 @@ func (s *session) allowUser(user string) bool {
 }
 
 func (s *session) createCommand() []string {
+	// Log the absolute path of the script
+	absPath, err := filepath.Abs(s.conf.script)
+	if err != nil {
+		slog.Error("failed to get absolute path", "script", s.conf.script, "error", err)
+		absPath = s.conf.script
+	}
+	
+	// Check if script exists and is executable
+	if info, err := os.Stat(absPath); err != nil {
+		slog.Error("script file error", "script", absPath, "error", err)
+	} else {
+		slog.Info("script file info", "script", absPath, "mode", info.Mode(), "executable", info.Mode()&0111 != 0)
+	}
+	
 	command := []string{s.conf.script, scriptRunCommand, s.scriptID}
 	if s.conf.record {
 		command = s.maybeWrapAsciinemaCommand(command)

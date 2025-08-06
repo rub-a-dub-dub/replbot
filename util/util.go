@@ -18,7 +18,13 @@ import (
 var (
 	nonAlphanumericCharsRegex = regexp.MustCompile(`[^A-Za-z0-9]`)
 	randomStringCharset       = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	tmuxBinaryPath            string // Global tmux binary path
 )
+
+// SetTmuxPath sets the global tmux binary path
+func SetTmuxPath(path string) {
+	tmuxBinaryPath = path
+}
 
 // SSHKeyPair represents an SSH key pair
 type SSHKeyPair struct {
@@ -43,6 +49,23 @@ func FileExists(filenames ...string) bool {
 
 // Run is a shortcut running an exec.Command
 func Run(command ...string) error {
+	// Handle tmux commands specially to avoid zsh alias issues
+	if command[0] == "tmux" {
+		if tmuxBinaryPath != "" {
+			// Use configured tmux path
+			command[0] = tmuxBinaryPath
+		} else {
+			// Try to find the actual tmux binary
+			tmuxPaths := []string{"/opt/homebrew/bin/tmux", "/usr/bin/tmux", "/usr/local/bin/tmux"}
+			for _, path := range tmuxPaths {
+				if _, err := os.Stat(path); err == nil {
+					command[0] = path
+					break
+				}
+			}
+		}
+	}
+	
 	cmd := exec.Command(command[0], command[1:]...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
