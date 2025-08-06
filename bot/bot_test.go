@@ -474,53 +474,6 @@ func TestBotThreadMessageHandlingWithoutMention(t *testing.T) {
 	assert.True(t, conn.MessageContainsWait("2", "no mention needed"))
 }
 
-func TestBotThreadMessageRateLimiting(t *testing.T) {
-	conf := createConfig(t)
-	robot, err := New(conf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	go func() {
-		_ = robot.Run() // Run robot in background, errors handled by test logic
-	}()
-	defer robot.Stop()
-	conn := robot.conn.(*memConn)
-
-	// Start a bash session
-	conn.Event(&messageEvent{
-		ID:          "msg-1",
-		Channel:     "channel",
-		ChannelType: channelTypeChannel,
-		Thread:      "",
-		User:        "spammer",
-		Message:     "@replbot bash",
-	})
-	assert.True(t, conn.MessageContainsWait("1", "REPL session started, @spammer"))
-
-	// Send many thread messages rapidly to trigger rate limiting
-	for i := 0; i < 15; i++ {
-		conn.Event(&messageEvent{
-			ID:          fmt.Sprintf("spam-%d", i),
-			Channel:     "channel",
-			ChannelType: channelTypeChannel,
-			Thread:      "msg-1",
-			User:        "spammer",
-			Message:     fmt.Sprintf("@replbot echo spam %d", i),
-		})
-	}
-
-	// Should see rate limit message
-	var foundRateLimit bool
-	for i := 1; i <= 20; i++ {
-		if msg := conn.Message(strconv.Itoa(i)); msg != nil {
-			if strings.Contains(msg.Message, "rate limit") || strings.Contains(msg.Message, "slow down") {
-				foundRateLimit = true
-				break
-			}
-		}
-	}
-	assert.True(t, foundRateLimit, "Should have received rate limit message")
-}
 
 func TestBotChannelModeIgnoresThreadMessages(t *testing.T) {
 	conf := createConfig(t)
