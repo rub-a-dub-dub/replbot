@@ -215,3 +215,12 @@ app-token: ""
 # Required: No
 #
 # share-key-file: /etc/replbot/hostkey
+
+# Path to the tmux binary. This is useful if tmux is installed in a non-standard location.
+# REPLbot will auto-detect the tmux path if not specified.
+#
+# Format:   /path/to/tmux
+# Default:  (auto-detected)
+# Required: No
+#
+# tmux-path:

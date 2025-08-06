@@ -68,6 +68,7 @@ Options:
   --script-dir, -d          script directory (default: /etc/replbot/script.d)
   --idle-timeout, -T        timeout after which sessions are ended
   --max-total-sessions, -S  max number of concurrent total sessions
+  --tmux-path               path to tmux binary (env: TMUX_PATH, auto-detected if not specified)
 ```
 
 ### Chat Usage
@@ -187,6 +188,7 @@ deb/rpm packages.
 - A modern-ish Linux, preferably Ubuntu 18.04+, since that's what I develop on -- though it also runs on other
   distros.
 - [tmux](https://github.com/tmux/tmux) >= 2.6 is required, which is part of Ubuntu 18.04 (but surprisingly not part of Amazon Linux!)
+  - If tmux is installed in a non-standard location, use the `--tmux-path` flag or `TMUX_PATH` environment variable
 - [docker](https://docs.docker.com/get-docker/) for almost all scripts REPLbot ships with
 - [asciinema](https://asciinema.org/) if you'd like to [record sessions](#recording-sessions)
 - [ttyd](https://github.com/tsl0922/ttyd) if you'd like to use the [web terminal](#web-terminal) feature
