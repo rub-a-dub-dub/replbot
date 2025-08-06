@@ -435,6 +435,7 @@ func (c *slackConn) translateSocketModeEvent(evt socketmode.Event) event {
 
 		switch ev := eventsAPIEvent.InnerEvent.Data.(type) {
 		case *slackevents.MessageEvent:
+			slog.Debug("received Slack MessageEvent", "channel", ev.Channel, "thread", ev.ThreadTimeStamp, "user", ev.User, "text", ev.Text)
 			return &messageEvent{
 				ID:          ev.TimeStamp,
 				Channel:     ev.Channel,
@@ -444,6 +445,7 @@ func (c *slackConn) translateSocketModeEvent(evt socketmode.Event) event {
 				Message:     ev.Text,
 			}
 		case *slackevents.AppMentionEvent:
+			slog.Debug("received Slack AppMentionEvent", "channel", ev.Channel, "thread", ev.ThreadTimeStamp, "user", ev.User, "text", ev.Text)
 			return &messageEvent{
 				ID:          ev.TimeStamp,
 				Channel:     ev.Channel,

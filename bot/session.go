@@ -842,6 +842,7 @@ func (s *session) handlePassthrough(input string) error {
 	if err != nil {
 		return s.conn.Send(s.conf.control, err.Error())
 	}
+	slog.Debug("handlePassthrough: pasting to tmux", "sessionID", s.conf.id, "original", input, "sanitized", sanitized)
 	return s.tmux.Paste(fmt.Sprintf("%s\n", sanitized))
 }
 

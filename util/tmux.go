@@ -184,7 +184,11 @@ func (s *Tmux) MainID() string {
 }
 
 func (s *Tmux) bufferFile() string {
-	return fmt.Sprintf("/dev/shm/%s.tmux.buffer", s.id)
+	// Use /dev/shm on Linux for better performance (RAM-based), /tmp elsewhere
+	if _, err := os.Stat("/dev/shm"); err == nil {
+		return fmt.Sprintf("/dev/shm/%s.tmux.buffer", s.id)
+	}
+	return fmt.Sprintf("/tmp/%s.tmux.buffer", s.id)
 }
 
 func (s *Tmux) scriptFile() string {
