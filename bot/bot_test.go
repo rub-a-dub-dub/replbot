@@ -474,7 +474,6 @@ func TestBotThreadMessageHandlingWithoutMention(t *testing.T) {
 	assert.True(t, conn.MessageContainsWait("2", "no mention needed"))
 }
 
-
 func TestBotChannelModeIgnoresThreadMessages(t *testing.T) {
 	conf := createConfig(t)
 	robot, err := New(conf)
