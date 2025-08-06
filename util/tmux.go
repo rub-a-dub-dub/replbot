@@ -85,7 +85,7 @@ func (s *Tmux) Start(env map[string]string, command ...string) error {
 	// Clean up the script file after execution
 	// The tmux.sh script will clean up config and launch script files
 	if err := os.Remove(s.scriptFile()); err != nil {
-		slog.Debug("failed to remove tmux script file", "file", s.scriptFile(), "error", err)
+		slog.Debug("cleanup: failed to remove script file", "file", s.scriptFile(), "error", err)
 	}
 
 	return err
@@ -178,7 +178,7 @@ func (s *Tmux) Stop() error {
 	}
 	// Clean up launch script that wasn't removed during setup
 	if err := os.Remove(s.launchScriptFile()); err != nil {
-		slog.Debug("failed to remove tmux launch script file", "file", s.launchScriptFile(), "error", err)
+		slog.Debug("cleanup: failed to remove launch script file", "file", s.launchScriptFile(), "error", err)
 	}
 	return nil
 }
