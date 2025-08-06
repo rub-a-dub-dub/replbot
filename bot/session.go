@@ -281,16 +281,16 @@ func (s *session) Run() error {
 		return err
 	}
 	slog.Debug("tmux started successfully", "session", s.conf.id)
-	
+
 	// Give tmux a moment to set up the session properly
 	time.Sleep(500 * time.Millisecond)
-	
+
 	// Check if tmux is actually running
 	if !s.tmux.Active() {
 		slog.Error("tmux session not active after start", "session", s.conf.id)
 		return fmt.Errorf("tmux session failed to start")
 	}
-	
+
 	if err := s.maybeStartWeb(); err != nil {
 		slog.Error("cannot start ttyd", "session", s.conf.id, "error", err)
 		// We just disabled it, so we continue here
@@ -302,7 +302,7 @@ func (s *session) Run() error {
 	if err := s.maybeSendStartShareMessage(); err != nil {
 		return err
 	}
-	
+
 	slog.Debug("launching goroutines", "session", s.conf.id)
 	s.g.Go(func() error {
 		slog.Debug("userInputLoop started", "session", s.conf.id)
@@ -331,7 +331,7 @@ func (s *session) Run() error {
 	if s.conf.record {
 		s.g.Go(s.monitorRecording)
 	}
-	
+
 	slog.Debug("waiting for goroutines", "session", s.conf.id)
 	if err := s.g.Wait(); err != nil && !errors.Is(err, errExit) {
 		slog.Error("session error", "session", s.conf.id, "error", err)
@@ -461,7 +461,7 @@ func (s *session) maybeRefreshTerminal(last, lastID string) (string, string, err
 	if err != nil {
 		tmuxActive := s.tmux.Active()
 		slog.Error("tmux capture failed", "session", s.conf.id, "error", err, "tmux_active", tmuxActive, "lastID", lastID)
-		
+
 		// Add a small retry mechanism for the first capture
 		if lastID == "" && tmuxActive {
 			slog.Debug("retrying first capture after delay", "session", s.conf.id)
@@ -473,13 +473,13 @@ func (s *session) maybeRefreshTerminal(last, lastID string) (string, string, err
 			}
 			slog.Error("retry failed", "session", s.conf.id, "error", err)
 		}
-		
+
 		if lastID != "" {
 			_ = s.conn.Update(s.conf.terminal, lastID, util.FormatMarkdownCode(addExitedMessage(sanitizeWindow(removeTmuxBorder(last))))) // Show "(REPL exited.)" in terminal
 		}
 		return "", "", errExit // The command may have ended, gracefully exit
 	}
-	
+
 captureSuccess:
 	current = s.maybeAddCursor(s.maybeTrimWindow(sanitizeWindow(removeTmuxBorder(current))))
 	if current == last {
@@ -667,14 +667,14 @@ func (s *session) createCommand() []string {
 		slog.Error("failed to get absolute path", "script", s.conf.script, "error", err)
 		absPath = s.conf.script
 	}
-	
+
 	// Check if script exists and is executable
 	if info, err := os.Stat(absPath); err != nil {
 		slog.Error("script file error", "script", absPath, "error", err)
 	} else {
 		slog.Info("script file info", "script", absPath, "mode", info.Mode(), "executable", info.Mode()&0111 != 0)
 	}
-	
+
 	command := []string{s.conf.script, scriptRunCommand, s.scriptID}
 	if s.conf.record {
 		command = s.maybeWrapAsciinemaCommand(command)

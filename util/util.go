@@ -65,7 +65,7 @@ func Run(command ...string) error {
 			}
 		}
 	}
-	
+
 	cmd := exec.Command(command[0], command[1:]...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {

@@ -78,13 +78,13 @@ func (s *Tmux) Start(env map[string]string, command ...string) error {
 	if err := script.Close(); err != nil {
 		return err
 	}
-	
+
 	err = Run("/bin/sh", s.scriptFile())
-	
+
 	// Clean up the script file after execution
 	// The tmux.sh script will clean up config and launch script files
 	os.Remove(s.scriptFile())
-	
+
 	return err
 }
 

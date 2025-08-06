@@ -80,7 +80,7 @@ func New(conf *config.Config) (*Bot, error) {
 	if conf.TmuxPath != "" {
 		util.SetTmuxPath(conf.TmuxPath)
 	}
-	
+
 	if len(conf.Scripts()) == 0 {
 		return nil, NewConfigError("NO_SCRIPTS", "no REPL scripts found in script dir", nil)
 	} else if err := util.Run("tmux", "-V"); err != nil {
@@ -227,7 +227,7 @@ func (b *Bot) maybeForwardMessage(ev *messageEvent) bool {
 	defer b.mu.Unlock()
 	sessionID := util.SanitizeNonAlphanumeric(fmt.Sprintf("%s_%s", ev.Channel, ev.Thread)) // Thread may be empty, that's ok
 	slog.Debug("maybeForwardMessage", "channel", ev.Channel, "thread", ev.Thread, "sessionID", sessionID, "message", ev.Message)
-	
+
 	// First try with the provided thread ID
 	if sess, ok := b.sessions[sessionID]; ok && sess.Active() {
 		slog.Debug("found active session, forwarding message", "sessionID", sessionID, "user", ev.User)
@@ -238,7 +238,7 @@ func (b *Bot) maybeForwardMessage(ev *messageEvent) bool {
 		}
 		return true
 	}
-	
+
 	// If no session found and we have a thread ID, also check if there's a session
 	// that was started with the thread ID as the message ID (happens when starting a new thread)
 	if ev.Thread != "" {
@@ -254,7 +254,7 @@ func (b *Bot) maybeForwardMessage(ev *messageEvent) bool {
 			return true
 		}
 	}
-	
+
 	// Log available sessions for debugging
 	var sessionList []string
 	for id := range b.sessions {
