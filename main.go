@@ -4,8 +4,8 @@ package main
 import (
 	"fmt"
 	"github.com/joho/godotenv"
-	"github.com/urfave/cli/v2"
 	"github.com/rub-a-dub-dub/replbot/cmd"
+	"github.com/urfave/cli/v2"
 	"log/slog"
 	"os"
 	"runtime"

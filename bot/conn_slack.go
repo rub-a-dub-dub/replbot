@@ -3,11 +3,11 @@ package bot
 import (
 	"context"
 	"fmt"
+	"github.com/rub-a-dub-dub/replbot/config"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 	"github.com/slack-go/slack/socketmode"
 	"golang.org/x/sync/errgroup"
-	"github.com/rub-a-dub-dub/replbot/config"
 	"io"
 	"log/slog"
 	"math"

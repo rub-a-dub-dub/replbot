@@ -7,10 +7,10 @@ import (
 	_ "embed" // go:embed requires this
 	"errors"
 	"fmt"
-	"github.com/tidwall/sjson"
-	"golang.org/x/sync/errgroup"
 	"github.com/rub-a-dub-dub/replbot/config"
 	"github.com/rub-a-dub-dub/replbot/util"
+	"github.com/tidwall/sjson"
+	"golang.org/x/sync/errgroup"
 	"io"
 	"log/slog"
 	"net"

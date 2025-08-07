@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/time/rate"
 	"github.com/rub-a-dub-dub/replbot/config"
+	"golang.org/x/time/rate"
 )
 
 type operation int

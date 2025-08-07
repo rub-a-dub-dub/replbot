@@ -4,11 +4,11 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/urfave/cli/v2"
-	"github.com/urfave/cli/v2/altsrc"
 	"github.com/rub-a-dub-dub/replbot/bot"
 	"github.com/rub-a-dub-dub/replbot/config"
 	"github.com/rub-a-dub-dub/replbot/util"
+	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v2/altsrc"
 	"log/slog"
 	"os"
 	"os/signal"

@@ -3,8 +3,8 @@ package bot
 import (
 	"archive/zip"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"github.com/rub-a-dub-dub/replbot/config"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
 	"os"
