@@ -3,11 +3,11 @@ package bot
 import (
 	"context"
 	"fmt"
+	"github.com/rub-a-dub-dub/replbot/config"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 	"github.com/slack-go/slack/socketmode"
 	"golang.org/x/sync/errgroup"
-	"heckel.io/replbot/config"
 	"io"
 	"log/slog"
 	"math"
@@ -435,6 +435,17 @@ func (c *slackConn) translateSocketModeEvent(evt socketmode.Event) event {
 
 		switch ev := eventsAPIEvent.InnerEvent.Data.(type) {
 		case *slackevents.MessageEvent:
+			slog.Debug("received Slack MessageEvent", "channel", ev.Channel, "thread", ev.ThreadTimeStamp, "user", ev.User, "text", ev.Text)
+			return &messageEvent{
+				ID:          ev.TimeStamp,
+				Channel:     ev.Channel,
+				ChannelType: c.channelType(ev.Channel),
+				Thread:      ev.ThreadTimeStamp,
+				User:        ev.User,
+				Message:     ev.Text,
+			}
+		case *slackevents.AppMentionEvent:
+			slog.Debug("received Slack AppMentionEvent", "channel", ev.Channel, "thread", ev.ThreadTimeStamp, "user", ev.User, "text", ev.Text)
 			return &messageEvent{
 				ID:          ev.TimeStamp,
 				Channel:     ev.Channel,

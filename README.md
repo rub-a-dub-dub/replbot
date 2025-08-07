@@ -1,11 +1,18 @@
 # 🤖 REPLbot
-[![Release](https://img.shields.io/github/release/binwiederhier/replbot.svg?color=success&style=flat-square)](https://github.com/binwiederhier/replbot/releases/latest)
-[![Go Reference](https://pkg.go.dev/badge/heckel.io/replbot.svg)](https://pkg.go.dev/heckel.io/replbot)
-[![Tests](https://github.com/binwiederhier/replbot/workflows/test/badge.svg)](https://github.com/binwiederhier/replbot/actions)
-[![Security](https://github.com/binwiederhier/replbot/actions/workflows/security.yaml/badge.svg)](https://github.com/binwiederhier/replbot/actions/workflows/security.yaml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/binwiederhier/replbot)](https://goreportcard.com/report/github.com/binwiederhier/replbot)
-[![codecov](https://codecov.io/gh/binwiederhier/replbot/branch/master/graph/badge.svg?token=bdrFZttMsk)](https://codecov.io/gh/binwiederhier/replbot)
-[![Slack channel](https://img.shields.io/badge/slack-@gophers/binwiederhier-success.svg?logo=slack)](https://gophers.slack.com/archives/C01JMTPGF2Q)
+
+> **Note**: This is a fork of the original [REPLbot](https://github.com/binwiederhier/replbot) by [binwiederhier](https://github.com/binwiederhier).
+> 
+> This fork includes:
+> - Fix for Slack thread message handling when using Socket Mode without message.* events
+> - Configurable tmux path support via --tmux-path flag or TMUX_PATH environment variable
+> - Cross-platform temporary file handling improvements
+
+[![Release](https://img.shields.io/github/release/rub-a-dub-dub/replbot.svg?color=success&style=flat-square)](https://github.com/rub-a-dub-dub/replbot/releases/latest)
+[![Go Reference](https://pkg.go.dev/badge/github.com/rub-a-dub-dub/replbot.svg)](https://pkg.go.dev/github.com/rub-a-dub-dub/replbot)
+[![Tests](https://github.com/rub-a-dub-dub/replbot/workflows/test/badge.svg)](https://github.com/rub-a-dub-dub/replbot/actions)
+[![Security](https://github.com/rub-a-dub-dub/replbot/actions/workflows/security.yaml/badge.svg)](https://github.com/rub-a-dub-dub/replbot/actions/workflows/security.yaml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rub-a-dub-dub/replbot)](https://goreportcard.com/report/github.com/rub-a-dub-dub/replbot)
+[![codecov](https://codecov.io/gh/rub-a-dub-dub/replbot/branch/master/graph/badge.svg?token=bdrFZttMsk)](https://codecov.io/gh/rub-a-dub-dub/replbot)
 
 REPLbot is a bot for Slack and Discord that allows you to control a [REPL](https://en.m.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) 
 or shell from a chat. It comes with a few REPLs (Go 🥳, Java, NodeJS, PHP, Python, Ruby, Scala, Kotlin, C++, Ubuntu, Debian, Alpine, Arch Linux, Amazon Linux, CentOS & Fedora), 
@@ -53,6 +60,25 @@ people using the bot if you give them an entire REPL.
 </table>
 
 ## Usage
+
+### Command Line Options
+REPLbot supports several command line flags for configuration:
+
+```bash
+replbot [options]
+
+Options:
+  --config, -c              config file (default: /etc/replbot/config.yml)
+  --debug                   enable debugging output
+  --bot-token, -t           bot token (env: REPLBOT_BOT_TOKEN)
+  --app-token, -p           Slack app-level token for Socket Mode (env: SLACK_APP_TOKEN)
+  --script-dir, -d          script directory (default: /etc/replbot/script.d)
+  --idle-timeout, -T        timeout after which sessions are ended
+  --max-total-sessions, -S  max number of concurrent total sessions
+  --tmux-path               path to tmux binary (env: TMUX_PATH, auto-detected if not specified)
+```
+
+### Chat Usage
 After [installing REPLbot](#installation), you may use it by tagging `@replbot` in Slack/Discord. For the most part it 
 should be pretty self-explanatory:
 
@@ -83,7 +109,7 @@ case "$1" in
 esac
 ```
 
-In all likelihood, you'll want more isolation by running REPLs as Docker containers. Here's the [PHP REPL script](https://github.com/binwiederhier/replbot/blob/1460ddba1adbfd450465d5d37b0b9b340e8a4f79/config/script.d/php)
+In all likelihood, you'll want more isolation by running REPLs as Docker containers. Here's the [PHP REPL script](https://github.com/rub-a-dub-dub/replbot/blob/main/config/script.d/php)
 that REPLbot ships with (not shortened):
 
 ```bash
@@ -162,13 +188,17 @@ as `trim` mode can get awkward when the terminal is expanded and the collapsed a
 ![replbot window mode](assets/discord-window-mode.png)
 
 ## Installation
-Please check out the [releases page](https://github.com/binwiederhier/replbot/releases) for binaries and 
+
+> **Note**: The installation examples below reference the original repository. For this fork, replace `binwiederhier` with `rub-a-dub-dub` in the URLs, or build from source.
+
+Please check out the [releases page](https://github.com/rub-a-dub-dub/replbot/releases) for binaries and 
 deb/rpm packages.
 
 **Requirements**:
 - A modern-ish Linux, preferably Ubuntu 18.04+, since that's what I develop on -- though it also runs on other
   distros.
 - [tmux](https://github.com/tmux/tmux) >= 2.6 is required, which is part of Ubuntu 18.04 (but surprisingly not part of Amazon Linux!)
+  - If tmux is installed in a non-standard location, use the `--tmux-path` flag or `TMUX_PATH` environment variable
 - [docker](https://docs.docker.com/get-docker/) for almost all scripts REPLbot ships with
 - [asciinema](https://asciinema.org/) if you'd like to [record sessions](#recording-sessions)
 - [ttyd](https://github.com/tsl0922/ttyd) if you'd like to use the [web terminal](#web-terminal) feature
@@ -205,10 +235,15 @@ REPLbot uses Slack's modern Socket Mode API for real-time communication. To crea
 
 **Installing `replbot`**:   
 1. Make sure `tmux` and probably also `docker` are installed. Then install REPLbot using any of the methods below. 
-2. Then edit `/etc/replbot/config.yml` to add your bot tokens:
-   - For Slack: Set both `bot-token` (xoxb-...) and `app-token` (xapp-...) 
-   - For Discord: Set only `bot-token`
-   - REPLbot will automatically detect the platform based on token format
+2. Configure your bot tokens using one of these methods:
+   - **Config file**: Edit `/etc/replbot/config.yml` and set `bot-token` and `app-token`
+   - **Environment variables**: Set `REPLBOT_BOT_TOKEN` and `SLACK_APP_TOKEN`
+   - **.env file**: Create a `.env` file with `REPLBOT_BOT_TOKEN=` and `SLACK_APP_TOKEN=` entries
+   - **Command line**: Use `--bot-token` and `--app-token` flags
+   
+   For Slack: Set both `bot-token` (xoxb-...) and `app-token` (xapp-...)
+   For Discord: Set only `bot-token`
+   REPLbot will automatically detect the platform based on token format
 3. Review the scripts in `/etc/replbot/script.d`, and make sure that you have Docker installed if you'd like to use them.
 4. If you're running REPLbot as non-root user (such as when you install the deb/rpm), be sure to add the `replbot` user to the `docker` group: `sudo usermod -G docker -a replbot`.
 5. Then just run it with `replbot` (or `systemctl start replbot` when using the deb/rpm).
@@ -249,7 +284,8 @@ tar zxvf v0.6.4.tar.gz
 sudo mkdir /etc/replbot
 sudo cp -a replbot-0.6.4/config/{script.d,config.yml} /etc/replbot
 vi /etc/replbot/config.yml
-  # Configure at least "bot-token"
+  # Configure at least "bot-token" and "app-token" (for Slack)
+  # Or create a .env file with REPLBOT_BOT_TOKEN= and SLACK_APP_TOKEN= entries
   # To support web terminal, set "web-host" (e.g. to localhost:31001)
   # To support sharing, set "share-host" (e.g. to localhost:31002)
   

@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rub-a-dub-dub/replbot/config"
 	"golang.org/x/time/rate"
-	"heckel.io/replbot/config"
 )
 
 type operation int

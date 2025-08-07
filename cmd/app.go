@@ -4,14 +4,15 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/rub-a-dub-dub/replbot/bot"
+	"github.com/rub-a-dub-dub/replbot/config"
+	"github.com/rub-a-dub-dub/replbot/util"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
-	"heckel.io/replbot/bot"
-	"heckel.io/replbot/config"
-	"heckel.io/replbot/util"
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -42,6 +43,7 @@ func New() *cli.App {
 		altsrc.NewStringFlag(&cli.StringFlag{Name: "web-host", Aliases: []string{"Y"}, EnvVars: []string{"REPLBOT_WEB_ADDRESS"}, Usage: "hostname:port used to provide the web terminal feature"}),
 		altsrc.NewStringFlag(&cli.StringFlag{Name: "share-host", Aliases: []string{"H"}, EnvVars: []string{"REPLBOT_SHARE_HOST"}, Usage: "SSH hostname:port, used for terminal sharing"}),
 		altsrc.NewStringFlag(&cli.StringFlag{Name: "share-key-file", Aliases: []string{"K"}, EnvVars: []string{"REPLBOT_SHARE_KEY_FILE"}, Value: "/etc/replbot/hostkey", Usage: "SSH host key file, used for terminal sharing"}),
+		altsrc.NewStringFlag(&cli.StringFlag{Name: "tmux-path", EnvVars: []string{"TMUX_PATH"}, Usage: "Path to tmux binary (auto-detected if not specified)"}),
 	}
 	return &cli.App{
 		Name:                   "replbot",
@@ -79,6 +81,7 @@ func execRun(c *cli.Context) error {
 	webHost := c.String("web-host")
 	shareHost := c.String("share-host")
 	shareKeyFile := c.String("share-key-file")
+	tmuxPath := c.String("tmux-path")
 	debug := c.Bool("debug")
 	if debug {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})))
@@ -145,6 +148,27 @@ func execRun(c *cli.Context) error {
 	if webHost == "" && defaultWeb {
 		vErrs = append(vErrs, bot.NewValidationError("WEB_HOST_REQUIRED", "cannot set --default-web if --web-host is not set", nil))
 	}
+	if tmuxPath != "" {
+		if !util.FileExists(tmuxPath) {
+			vErrs = append(vErrs, bot.NewConfigError("TMUX_PATH_NOT_FOUND", fmt.Sprintf("specified tmux path %s does not exist", tmuxPath), nil))
+		} else if info, err := os.Stat(tmuxPath); err == nil && info.Mode()&0111 == 0 {
+			vErrs = append(vErrs, bot.NewConfigError("TMUX_PATH_NOT_EXECUTABLE", fmt.Sprintf("specified tmux path %s is not executable", tmuxPath), nil))
+		} else {
+			// Validate tmux path is in expected directories for security
+			absPath, _ := filepath.Abs(tmuxPath)
+			validPaths := []string{"/usr/bin/", "/usr/local/bin/", "/opt/homebrew/bin/", "/bin/", "/sbin/"}
+			isValid := false
+			for _, prefix := range validPaths {
+				if strings.HasPrefix(absPath, prefix) {
+					isValid = true
+					break
+				}
+			}
+			if !isValid {
+				vErrs = append(vErrs, bot.NewConfigError("TMUX_PATH_UNSAFE", fmt.Sprintf("tmux path %s is not in a standard system directory", tmuxPath), nil))
+			}
+		}
+	}
 	cursorRate, err := parseCursorRate(cursor)
 	if err != nil {
 		vErrs = append(vErrs, err)
@@ -174,6 +198,7 @@ func execRun(c *cli.Context) error {
 	conf.WebHost = webHost
 	conf.ShareHost = shareHost
 	conf.ShareKeyFile = shareKeyFile
+	conf.TmuxPath = tmuxPath
 	conf.Debug = debug
 	robot, err := bot.New(conf)
 	if err != nil {

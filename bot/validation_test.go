@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"heckel.io/replbot/config"
+	"github.com/rub-a-dub-dub/replbot/config"
 )
 
 func TestValidateCommand(t *testing.T) {

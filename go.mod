@@ -1,4 +1,4 @@
-module heckel.io/replbot
+module github.com/rub-a-dub-dub/replbot
 
 go 1.24
 
@@ -18,6 +18,8 @@ require (
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/time v0.12.0
 )
+
+require github.com/joho/godotenv v1.5.1
 
 require (
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect

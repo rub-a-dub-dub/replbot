@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rub-a-dub-dub/replbot/config"
 	"github.com/stretchr/testify/assert"
-	"heckel.io/replbot/config"
 )
 
 func TestRateLimiterAllowAndCleanup(t *testing.T) {

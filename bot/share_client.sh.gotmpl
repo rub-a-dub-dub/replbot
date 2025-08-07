@@ -1,8 +1,8 @@
-{{- /*gotype:heckel.io/replbot/bot.sessionConfig*/ -}}
+{{- /*gotype:github.com/rub-a-dub-dub/replbot/bot.sessionConfig*/ -}}
 #!/bin/bash
 #
 # REPLbot terminal sharing script for the client.
-# See https://heckel.io/replbot for details.
+# See https://github.com/rub-a-dub-dub/replbot for details.
 #
 # This script will create a local tmux session, and a reverse SSH tunnel (ssh -R) to the REPLbot server,
 # connecting the local tmux session to a TTY.
@@ -51,7 +51,7 @@ cleanup() {
   rm -f "${sshd_config_file}" "${sshd_hostkey_file}" "${sshd_authorized_keys_file}" "${tmux_config_file}"
   clear
   echo "REPLbot terminal sharing session ended. You may reconnect with the same"
-  echo "command as before. Check out https://heckel.io/replbot to learn more."
+  echo "command as before. Check out https://github.com/rub-a-dub-dub/replbot to learn more."
 }
 trap cleanup EXIT
 

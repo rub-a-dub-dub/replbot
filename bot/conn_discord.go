@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"heckel.io/replbot/config"
+	"github.com/rub-a-dub-dub/replbot/config"
 	"io"
 	"log/slog"
 	"regexp"

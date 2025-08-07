@@ -1,5 +1,5 @@
 GO=$(shell which go)
-VERSION := $(shell git describe --tag)
+VERSION := $(shell git describe --tags --always 2>/dev/null || echo "dev")
 
 .PHONY:
 

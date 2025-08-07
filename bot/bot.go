@@ -7,10 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gliderlabs/ssh"
+	"github.com/rub-a-dub-dub/replbot/config"
+	"github.com/rub-a-dub-dub/replbot/util"
 	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
-	"heckel.io/replbot/config"
-	"heckel.io/replbot/util"
 	"log/slog"
 	"net"
 	"net/http"
@@ -76,6 +76,11 @@ type Bot struct {
 
 // New creates a new REPLbot instance using the given configuration
 func New(conf *config.Config) (*Bot, error) {
+	// Set the global tmux path if configured
+	if conf.TmuxPath != "" {
+		util.SetTmuxPath(conf.TmuxPath)
+	}
+
 	if len(conf.Scripts()) == 0 {
 		return nil, NewConfigError("NO_SCRIPTS", "no REPL scripts found in script dir", nil)
 	} else if err := util.Run("tmux", "-V"); err != nil {
@@ -181,14 +186,17 @@ func (b *Bot) handleEvent(e event) error {
 }
 
 func (b *Bot) handleMessageEvent(ev *messageEvent) error {
+	slog.Debug("handleMessageEvent", "channel", ev.Channel, "thread", ev.Thread, "user", ev.User, "message", ev.Message, "channelType", ev.ChannelType)
 	if err := validateMessageLength(ev.Message); err != nil {
 		return b.conn.Send(&channelID{Channel: ev.Channel, Thread: ev.Thread}, err.Error())
 	}
 	if b.maybeForwardMessage(ev) {
 		return nil // We forwarded the message
 	} else if ev.ChannelType == channelTypeUnknown {
+		slog.Debug("ignoring message: unknown channel type")
 		return nil
 	} else if ev.ChannelType == channelTypeChannel && !strings.Contains(ev.Message, b.conn.MentionBot()) {
+		slog.Debug("ignoring message: channel message without bot mention")
 		return nil
 	}
 	conf, err := b.parseSessionConfig(ev)
@@ -218,7 +226,11 @@ func (b *Bot) maybeForwardMessage(ev *messageEvent) bool {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	sessionID := util.SanitizeNonAlphanumeric(fmt.Sprintf("%s_%s", ev.Channel, ev.Thread)) // Thread may be empty, that's ok
+	slog.Debug("maybeForwardMessage", "channel", ev.Channel, "thread", ev.Thread, "sessionID", sessionID, "message", ev.Message)
+
+	// First try with the provided thread ID
 	if sess, ok := b.sessions[sessionID]; ok && sess.Active() {
+		slog.Debug("found active session, forwarding message", "sessionID", sessionID, "user", ev.User)
 		if allowed, retry := b.rl.allow(ev.User, opCommand); allowed {
 			sess.UserInput(ev.User, ev.Message)
 		} else {
@@ -226,6 +238,29 @@ func (b *Bot) maybeForwardMessage(ev *messageEvent) bool {
 		}
 		return true
 	}
+
+	// If no session found and we have a thread ID, also check if there's a session
+	// that was started with the thread ID as the message ID (happens when starting a new thread)
+	if ev.Thread != "" {
+		altSessionID := util.SanitizeNonAlphanumeric(fmt.Sprintf("%s_%s", ev.Channel, strings.ReplaceAll(ev.Thread, ".", "_")))
+		slog.Debug("checking alternative session ID", "altSessionID", altSessionID)
+		if sess, ok := b.sessions[altSessionID]; ok && sess.Active() {
+			slog.Debug("found active session with alternative ID, forwarding message", "sessionID", altSessionID, "user", ev.User)
+			if allowed, retry := b.rl.allow(ev.User, opCommand); allowed {
+				sess.UserInput(ev.User, ev.Message)
+			} else {
+				b.sendRateLimit(&channelID{Channel: ev.Channel, Thread: ev.Thread}, ev.User, retry)
+			}
+			return true
+		}
+	}
+
+	// Log available sessions for debugging
+	var sessionList []string
+	for id := range b.sessions {
+		sessionList = append(sessionList, id)
+	}
+	slog.Debug("no active session found", "sessionID", sessionID, "availableSessions", sessionList)
 	return false
 }
 
@@ -358,11 +393,13 @@ func (b *Bot) startSessionThread(ev *messageEvent, conf *sessionConfig) error {
 		conf.id = util.SanitizeNonAlphanumeric(fmt.Sprintf("%s_%s", ev.Channel, ev.ID))
 		conf.control = &channelID{Channel: ev.Channel, Thread: ev.ID}
 		conf.terminal = conf.control
+		slog.Debug("starting thread session (new thread)", "channel", ev.Channel, "messageID", ev.ID, "sessionID", conf.id)
 		return b.startSession(conf)
 	}
 	conf.id = util.SanitizeNonAlphanumeric(fmt.Sprintf("%s_%s", ev.Channel, ev.Thread))
 	conf.control = &channelID{Channel: ev.Channel, Thread: ev.Thread}
 	conf.terminal = conf.control
+	slog.Debug("starting thread session (existing thread)", "channel", ev.Channel, "thread", ev.Thread, "sessionID", conf.id)
 	return b.startSession(conf)
 }
 
