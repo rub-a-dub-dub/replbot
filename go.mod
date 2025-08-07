@@ -1,4 +1,4 @@
-module heckel.io/replbot
+module github.com/rub-a-dub-dub/replbot
 
 go 1.24
 

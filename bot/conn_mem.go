@@ -2,8 +2,8 @@ package bot
 
 import (
 	"context"
-	"heckel.io/replbot/config"
-	"heckel.io/replbot/util"
+	"github.com/rub-a-dub-dub/replbot/config"
+	"github.com/rub-a-dub-dub/replbot/util"
 	"io"
 	"log/slog"
 	"regexp"

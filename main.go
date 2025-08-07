@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/urfave/cli/v2"
-	"heckel.io/replbot/cmd"
+	"github.com/rub-a-dub-dub/replbot/cmd"
 	"log/slog"
 	"os"
 	"runtime"

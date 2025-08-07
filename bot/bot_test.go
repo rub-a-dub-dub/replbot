@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"heckel.io/replbot/config"
+	"github.com/rub-a-dub-dub/replbot/config"
 	"io"
 	"net/http"
 	"os"

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"golang.org/x/time/rate"
-	"heckel.io/replbot/config"
+	"github.com/rub-a-dub-dub/replbot/config"
 )
 
 type operation int

@@ -1,11 +1,18 @@
 # 🤖 REPLbot
-[![Release](https://img.shields.io/github/release/binwiederhier/replbot.svg?color=success&style=flat-square)](https://github.com/binwiederhier/replbot/releases/latest)
-[![Go Reference](https://pkg.go.dev/badge/heckel.io/replbot.svg)](https://pkg.go.dev/heckel.io/replbot)
-[![Tests](https://github.com/binwiederhier/replbot/workflows/test/badge.svg)](https://github.com/binwiederhier/replbot/actions)
-[![Security](https://github.com/binwiederhier/replbot/actions/workflows/security.yaml/badge.svg)](https://github.com/binwiederhier/replbot/actions/workflows/security.yaml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/binwiederhier/replbot)](https://goreportcard.com/report/github.com/binwiederhier/replbot)
-[![codecov](https://codecov.io/gh/binwiederhier/replbot/branch/master/graph/badge.svg?token=bdrFZttMsk)](https://codecov.io/gh/binwiederhier/replbot)
-[![Slack channel](https://img.shields.io/badge/slack-@gophers/binwiederhier-success.svg?logo=slack)](https://gophers.slack.com/archives/C01JMTPGF2Q)
+
+> **Note**: This is a fork of the original [REPLbot](https://github.com/binwiederhier/replbot) by [binwiederhier](https://github.com/binwiederhier).
+> 
+> This fork includes:
+> - Fix for Slack thread message handling when using Socket Mode without message.* events
+> - Configurable tmux path support via --tmux-path flag or TMUX_PATH environment variable
+> - Cross-platform temporary file handling improvements
+
+[![Release](https://img.shields.io/github/release/rub-a-dub-dub/replbot.svg?color=success&style=flat-square)](https://github.com/rub-a-dub-dub/replbot/releases/latest)
+[![Go Reference](https://pkg.go.dev/badge/github.com/rub-a-dub-dub/replbot.svg)](https://pkg.go.dev/github.com/rub-a-dub-dub/replbot)
+[![Tests](https://github.com/rub-a-dub-dub/replbot/workflows/test/badge.svg)](https://github.com/rub-a-dub-dub/replbot/actions)
+[![Security](https://github.com/rub-a-dub-dub/replbot/actions/workflows/security.yaml/badge.svg)](https://github.com/rub-a-dub-dub/replbot/actions/workflows/security.yaml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rub-a-dub-dub/replbot)](https://goreportcard.com/report/github.com/rub-a-dub-dub/replbot)
+[![codecov](https://codecov.io/gh/rub-a-dub-dub/replbot/branch/master/graph/badge.svg?token=bdrFZttMsk)](https://codecov.io/gh/rub-a-dub-dub/replbot)
 
 REPLbot is a bot for Slack and Discord that allows you to control a [REPL](https://en.m.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) 
 or shell from a chat. It comes with a few REPLs (Go 🥳, Java, NodeJS, PHP, Python, Ruby, Scala, Kotlin, C++, Ubuntu, Debian, Alpine, Arch Linux, Amazon Linux, CentOS & Fedora), 
@@ -102,7 +109,7 @@ case "$1" in
 esac
 ```
 
-In all likelihood, you'll want more isolation by running REPLs as Docker containers. Here's the [PHP REPL script](https://github.com/binwiederhier/replbot/blob/1460ddba1adbfd450465d5d37b0b9b340e8a4f79/config/script.d/php)
+In all likelihood, you'll want more isolation by running REPLs as Docker containers. Here's the [PHP REPL script](https://github.com/rub-a-dub-dub/replbot/blob/main/config/script.d/php)
 that REPLbot ships with (not shortened):
 
 ```bash
@@ -181,7 +188,10 @@ as `trim` mode can get awkward when the terminal is expanded and the collapsed a
 ![replbot window mode](assets/discord-window-mode.png)
 
 ## Installation
-Please check out the [releases page](https://github.com/binwiederhier/replbot/releases) for binaries and 
+
+> **Note**: The installation examples below reference the original repository. For this fork, replace `binwiederhier` with `rub-a-dub-dub` in the URLs, or build from source.
+
+Please check out the [releases page](https://github.com/rub-a-dub-dub/replbot/releases) for binaries and 
 deb/rpm packages.
 
 **Requirements**:
