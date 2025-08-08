@@ -1,0 +1,79 @@
+#!/bin/bash
+# REPLbot script to run Claude Code CLI in a specified directory.
+#
+# Scripts are executed as "./script run <id>" to start the REPL,
+# and as "./script kill <id>" to stop it.
+#
+# The <id> parameter is used as the relative directory path under /Users/crossbow/git/
+# For example: "claude-code replbot" will start Claude Code in /Users/crossbow/git/replbot/
+
+BASE_DIR="/Users/crossbow/git"
+
+case "$1" in
+  run)
+    # $2 is the session ID from REPLbot (like replbot_C098UB6JMJP_1754543242_905589)
+    
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Claude Code REPL Session"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo
+    echo "Available directories under $BASE_DIR:"
+    echo
+    
+    # List directories under BASE_DIR in columns
+    for dir in "$BASE_DIR"/*/; do
+      if [ -d "$dir" ]; then
+        basename "$dir"
+      fi
+    done | head -40 | pr -t -2 -w 60
+    
+    echo
+    echo "Enter the directory name (relative to $BASE_DIR)"
+    echo "Examples: replbot, myproject, tools/cli"
+    echo -n "Directory: "
+    
+    # Read directory input
+    read -r DIR_NAME
+    
+    # Check if input was provided
+    if [ -z "$DIR_NAME" ]; then
+      echo
+      echo "Error: No directory specified"
+      echo "You must enter a directory name to continue."
+      echo "Please restart the session and specify a directory."
+      exit 1
+    fi
+    
+    WORK_DIR="$BASE_DIR/$DIR_NAME"
+    
+    # Verify directory exists
+    if [ ! -d "$WORK_DIR" ]; then
+      echo
+      echo "Error: Directory $WORK_DIR does not exist"
+      echo "Please restart the session and specify a valid directory."
+      exit 1
+    fi
+    
+    # Change to the specified directory
+    cd "$WORK_DIR"
+    
+    echo
+    echo "Starting Claude Code in: $WORK_DIR"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo
+    
+    # Start Claude Code CLI in interactive mode
+    # Don't use exec so the script can handle signals properly
+    claude 2>&1
+    ;;
+    
+  kill)
+    # No cleanup needed - we're working with existing directories
+    # tmux/REPLbot will handle process termination
+    ;;
+    
+  *)
+    echo "Syntax: $0 (run|kill) <relative-directory-path>"
+    exit 1
+    ;;
+esac
