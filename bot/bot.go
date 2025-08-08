@@ -226,16 +226,13 @@ func (b *Bot) maybeForwardMessage(ev *messageEvent) bool {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	sessionID := util.SanitizeNonAlphanumeric(fmt.Sprintf("%s_%s", ev.Channel, ev.Thread)) // Thread may be empty, that's ok
-	slog.Debug("maybeForwardMessage", "channel", ev.Channel, "thread", ev.Thread, "sessionID", sessionID, "message", ev.Message, "messageBytes", []byte(ev.Message), "botMention", b.conn.MentionBot())
+	slog.Debug("maybeForwardMessage", "channel", ev.Channel, "thread", ev.Thread, "sessionID", sessionID, "message", ev.Message)
 
 	// First try with the provided thread ID
 	if sess, ok := b.sessions[sessionID]; ok && sess.Active() {
 		slog.Debug("found active session, forwarding message", "sessionID", sessionID, "user", ev.User)
 		if allowed, retry := b.rl.allow(ev.User, opCommand); allowed {
-			// Strip bot mention from message before forwarding to session
-			// This handles both "@bot !c" and "@bot!c" formats
-			message := strings.TrimSpace(strings.TrimPrefix(ev.Message, b.conn.MentionBot()))
-			sess.UserInput(ev.User, message)
+			sess.UserInput(ev.User, ev.Message)
 		} else {
 			b.sendRateLimit(&channelID{Channel: ev.Channel, Thread: ev.Thread}, ev.User, retry)
 		}
@@ -250,10 +247,7 @@ func (b *Bot) maybeForwardMessage(ev *messageEvent) bool {
 		if sess, ok := b.sessions[altSessionID]; ok && sess.Active() {
 			slog.Debug("found active session with alternative ID, forwarding message", "sessionID", altSessionID, "user", ev.User)
 			if allowed, retry := b.rl.allow(ev.User, opCommand); allowed {
-				// Strip bot mention from message before forwarding to session
-				// This handles both "@bot !c" and "@bot!c" formats
-				message := strings.TrimSpace(strings.TrimPrefix(ev.Message, b.conn.MentionBot()))
-				sess.UserInput(ev.User, message)
+				sess.UserInput(ev.User, ev.Message)
 			} else {
 				b.sendRateLimit(&channelID{Channel: ev.Channel, Thread: ev.Thread}, ev.User, retry)
 			}

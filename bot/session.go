@@ -424,7 +424,7 @@ func (s *session) handleUserInput(user, message string) error {
 		return s.conn.Send(s.conf.control, err.Error())
 	}
 	atomic.AddInt32(&s.userInputCount, 1)
-	
+
 	// Enhanced debug logging - show first few commands being checked
 	slog.Debug("checking commands", "message", message, "numCommands", len(s.commands))
 	commandsChecked := 0
