@@ -419,16 +419,26 @@ func (s *session) userInputLoop() error {
 }
 
 func (s *session) handleUserInput(user, message string) error {
-	slog.Debug("user input", "session", s.conf.id, "user", user, "message", message)
+	slog.Debug("user input", "session", s.conf.id, "user", user, "message", message, "messageBytes", []byte(message), "messageLen", len(message))
 	if err := validateMessageLength(message); err != nil {
 		return s.conn.Send(s.conf.control, err.Error())
 	}
 	atomic.AddInt32(&s.userInputCount, 1)
+
+	// Enhanced debug logging - show first few commands being checked
+	slog.Debug("checking commands", "message", message, "numCommands", len(s.commands))
+	commandsChecked := 0
 	for _, c := range s.commands {
+		if commandsChecked < 5 || strings.HasPrefix(c.prefix, "!c") || strings.HasPrefix(c.prefix, "!d") || strings.HasPrefix(c.prefix, "!exit") {
+			slog.Debug("checking command", "prefix", c.prefix, "message", message, "hasPrefix", strings.HasPrefix(message, c.prefix))
+		}
 		if strings.HasPrefix(message, c.prefix) {
+			slog.Debug("MATCHED command", "prefix", c.prefix, "message", message)
 			return c.execute(message)
 		}
+		commandsChecked++
 	}
+	slog.Debug("no command matched, passing through", "message", message)
 	return s.handlePassthrough(message)
 }
 
