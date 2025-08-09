@@ -848,6 +848,7 @@ func (s *session) shouldWarnMessageLength(size *config.Size) bool {
 
 func (s *session) handlePassthrough(input string) error {
 	cmd := s.conn.Unescape(input)
+	cmd = strings.TrimSpace(cmd) // Trim spaces left after removing bot mentions
 	sanitized, err := sanitizeCommand(cmd)
 	if err != nil {
 		return s.conn.Send(s.conf.control, err.Error())
