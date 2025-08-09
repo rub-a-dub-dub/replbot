@@ -41,6 +41,7 @@ case "$1" in
       echo "Error: No directory specified"
       echo "You must enter a directory name to continue."
       echo "Please restart the session and specify a directory."
+      sleep 0.5  # Brief delay to ensure output is flushed
       exit 1
     fi
     
@@ -51,6 +52,7 @@ case "$1" in
       echo
       echo "Error: Directory $WORK_DIR does not exist"
       echo "Please restart the session and specify a valid directory."
+      sleep 0.5  # Brief delay to ensure output is flushed
       exit 1
     fi
     
