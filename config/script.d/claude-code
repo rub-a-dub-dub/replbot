@@ -35,16 +35,12 @@ case "$1" in
     # Read directory input
     read -r DIR_NAME
     
-    # Trim leading and trailing spaces from input
-    DIR_NAME=$(echo "$DIR_NAME" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    
     # Check if input was provided
     if [ -z "$DIR_NAME" ]; then
       echo
       echo "Error: No directory specified"
       echo "You must enter a directory name to continue."
       echo "Please restart the session and specify a directory."
-      sleep 0.5  # Brief delay to ensure output is flushed
       exit 1
     fi
     
@@ -55,7 +51,6 @@ case "$1" in
       echo
       echo "Error: Directory $WORK_DIR does not exist"
       echo "Please restart the session and specify a valid directory."
-      sleep 0.5  # Brief delay to ensure output is flushed
       exit 1
     fi
     
@@ -69,8 +64,7 @@ case "$1" in
     
     # Start Claude Code CLI in interactive mode
     # Don't use exec so the script can handle signals properly
-    # Use absolute path to ensure claude is found
-    /Users/crossbow/.nvm/versions/node/v21.2.0/bin/claude 2>&1
+    claude 2>&1
     ;;
     
   kill)
