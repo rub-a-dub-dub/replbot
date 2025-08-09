@@ -35,6 +35,9 @@ case "$1" in
     # Read directory input
     read -r DIR_NAME
     
+    # Trim leading and trailing spaces from input
+    DIR_NAME=$(echo "$DIR_NAME" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    
     # Check if input was provided
     if [ -z "$DIR_NAME" ]; then
       echo
@@ -66,7 +69,8 @@ case "$1" in
     
     # Start Claude Code CLI in interactive mode
     # Don't use exec so the script can handle signals properly
-    claude 2>&1
+    # Use absolute path to ensure claude is found
+    /Users/crossbow/.nvm/versions/node/v21.2.0/bin/claude 2>&1
     ;;
     
   kill)
