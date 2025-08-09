@@ -420,6 +420,11 @@ func (s *session) userInputLoop() error {
 
 func (s *session) handleUserInput(user, message string) error {
 	slog.Debug("user input", "session", s.conf.id, "user", user, "message", message, "messageBytes", []byte(message), "messageLen", len(message))
+
+	// Clean the message before checking commands
+	message = s.conn.Unescape(message)
+	message = strings.TrimSpace(message)
+
 	if err := validateMessageLength(message); err != nil {
 		return s.conn.Send(s.conf.control, err.Error())
 	}
@@ -847,9 +852,8 @@ func (s *session) shouldWarnMessageLength(size *config.Size) bool {
 }
 
 func (s *session) handlePassthrough(input string) error {
-	cmd := s.conn.Unescape(input)
-	cmd = strings.TrimSpace(cmd) // Trim spaces left after removing bot mentions
-	sanitized, err := sanitizeCommand(cmd)
+	// Input is already unescaped and trimmed from handleUserInput
+	sanitized, err := sanitizeCommand(input)
 	if err != nil {
 		return s.conn.Send(s.conf.control, err.Error())
 	}
@@ -863,7 +867,8 @@ func (s *session) handleHelpCommand(_ string) error {
 }
 
 func (s *session) handleNoNewlineCommand(input string) error {
-	input = s.conn.Unescape(strings.TrimSpace(strings.TrimPrefix(input, "!n")))
+	// Input is already unescaped and trimmed from handleUserInput
+	input = strings.TrimSpace(strings.TrimPrefix(input, "!n"))
 	if input == "" {
 		return s.conn.Send(s.conf.control, noNewlineHelpMessage)
 	}
@@ -871,7 +876,8 @@ func (s *session) handleNoNewlineCommand(input string) error {
 }
 
 func (s *session) handleEscapeCommand(input string) error {
-	input = unquote(s.conn.Unescape(strings.TrimSpace(strings.TrimPrefix(input, "!e"))))
+	// Input is already unescaped and trimmed from handleUserInput
+	input = unquote(strings.TrimSpace(strings.TrimPrefix(input, "!e")))
 	if input == "" {
 		return s.conn.Send(s.conf.control, escapeHelpMessage)
 	}
