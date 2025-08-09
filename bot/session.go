@@ -421,30 +421,35 @@ func (s *session) userInputLoop() error {
 func (s *session) handleUserInput(user, message string) error {
 	slog.Debug("user input", "session", s.conf.id, "user", user, "message", message, "messageBytes", []byte(message), "messageLen", len(message))
 
-	// Clean the message before checking commands
-	message = s.conn.Unescape(message)
-	message = strings.TrimSpace(message)
+	// Store original message for passthrough
+	originalMessage := message
 
-	if err := validateMessageLength(message); err != nil {
+	// Clean the message for command checking only
+	cleanedMessage := s.conn.Unescape(message)
+	cleanedMessage = strings.TrimSpace(cleanedMessage)
+
+	if err := validateMessageLength(cleanedMessage); err != nil {
 		return s.conn.Send(s.conf.control, err.Error())
 	}
 	atomic.AddInt32(&s.userInputCount, 1)
 
 	// Enhanced debug logging - show first few commands being checked
-	slog.Debug("checking commands", "message", message, "numCommands", len(s.commands))
+	slog.Debug("checking commands", "message", cleanedMessage, "numCommands", len(s.commands))
 	commandsChecked := 0
 	for _, c := range s.commands {
 		if commandsChecked < 5 || strings.HasPrefix(c.prefix, "!c") || strings.HasPrefix(c.prefix, "!d") || strings.HasPrefix(c.prefix, "!exit") {
-			slog.Debug("checking command", "prefix", c.prefix, "message", message, "hasPrefix", strings.HasPrefix(message, c.prefix))
+			slog.Debug("checking command", "prefix", c.prefix, "message", cleanedMessage, "hasPrefix", strings.HasPrefix(cleanedMessage, c.prefix))
 		}
-		if strings.HasPrefix(message, c.prefix) {
-			slog.Debug("MATCHED command", "prefix", c.prefix, "message", message)
-			return c.execute(message)
+		if strings.HasPrefix(cleanedMessage, c.prefix) {
+			slog.Debug("MATCHED command", "prefix", c.prefix, "message", cleanedMessage)
+			// Pass cleaned message to command handlers
+			return c.execute(cleanedMessage)
 		}
 		commandsChecked++
 	}
-	slog.Debug("no command matched, passing through", "message", message)
-	return s.handlePassthrough(message)
+	slog.Debug("no command matched, passing through", "message", originalMessage)
+	// Pass original message to handlePassthrough
+	return s.handlePassthrough(originalMessage)
 }
 
 func (s *session) commandOutputLoop() error {
@@ -852,8 +857,10 @@ func (s *session) shouldWarnMessageLength(size *config.Size) bool {
 }
 
 func (s *session) handlePassthrough(input string) error {
-	// Input is already unescaped and trimmed from handleUserInput
-	sanitized, err := sanitizeCommand(input)
+	// Clean the input for passthrough
+	cmd := s.conn.Unescape(input)
+	cmd = strings.TrimSpace(cmd)
+	sanitized, err := sanitizeCommand(cmd)
 	if err != nil {
 		return s.conn.Send(s.conf.control, err.Error())
 	}
