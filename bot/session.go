@@ -76,7 +76,7 @@ const (
 		"  `!e TEXT` - Sends _TEXT_ (interprets _\\n_, _\\r_, _\\t_, _\\b_ & _\\x.._)\n\n" +
 		"Sending keys (can be combined):\n" +
 		"  `!r` - Return key\n" +
-		"  `!t`, `!tt` - Tab / double-tab\n" +
+		"  `!t`, `!tt`, `!s-tab` - Tab / double-tab / shift-tab\n" +
 		"  `!up`, `!down`, `!left`, `!right` - Cursor\n" +
 		"  `!pu`, `!pd` - Page up / page down\n" +
 		"  `!a`, `!b`, `!c`, `!d`, `!c-..` - Ctrl-..\n" +
@@ -114,6 +114,7 @@ var (
 		"!d":     "^D",
 		"!t":     "\t",
 		"!tt":    "\t\t",
+		"!s-tab": "btab",   // Shift-Tab
 		"!esc":   "escape", // ESC
 		"!up":    "up",     // Cursor up
 		"!down":  "down",   // Cursor down
